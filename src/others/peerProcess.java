@@ -5,7 +5,6 @@ import FileProcessor.FileManagerExecutor;
 import java.io.*;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -14,7 +13,7 @@ public class peerProcess {
     private static Peer peer;
     private static boolean completed;
 
-    public static void main(String[] args) throws IOException {
+    public void start(String[] args) throws IOException {
         completed = false;
 
         if (args.length > 0) {
