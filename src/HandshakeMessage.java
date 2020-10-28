@@ -1,6 +1,6 @@
+import java.io.Serializable;
 
-
-public class HandshakeMessage {
+public class HandshakeMessage implements Serializable {
     private String header;
     private String zeros;
     private int peerID;
