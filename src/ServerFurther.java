@@ -21,6 +21,7 @@ public class ServerFurther {
         private ObjectOutputStream out;    //stream write to the socket
         private int no;		//The index number of the client
         private int sPort;
+        private int clientPort;
 
         private HashMap<Integer, Boolean> handshakes = new HashMap<Integer, Boolean>();
 
@@ -42,14 +43,35 @@ public class ServerFurther {
                         Object receivedMsg = MessageConversion.deserialize((byte[]) in.readObject());
                         if (receivedMsg instanceof HandshakeMessage) {
                             HandshakeMessage handshakeMessage = (HandshakeMessage) receivedMsg;
-                            if (handshakeMessage.getHeader().equals("P2PFILESHARINGPROJ") && handshakes.get(handshakeMessage.getPeerID()) == null) {
-                                System.out.println("Peer " + sPort + " received Successful Handshake from " + handshakeMessage.getPeerID());
+                            clientPort = handshakeMessage.getPeerID();
+                            if (handshakeMessage.getHeader().equals("P2PFILESHARINGPROJ") && handshakes.get(clientPort) == null) {
+                                System.out.println("Peer " + sPort + " received Successful Handshake from " + clientPort);
                                 HandshakeMessage handshakeMessageBack = new HandshakeMessage(sPort);
-                                handshakes.put(handshakeMessage.getPeerID(), true);
+                                handshakes.put(clientPort, true);
                                 sendMessage(MessageConversion.serialize(handshakeMessageBack));
                             }
-                            else if (handshakeMessage.getHeader().equals("P2PFILESHARINGPROJ") && handshakes.get(handshakeMessage.getPeerID()) == true) {
-                                System.out.println("Peer " + sPort + " Completed Handshake from " + handshakeMessage.getPeerID());
+                            else if (handshakeMessage.getHeader().equals("P2PFILESHARINGPROJ") && handshakes.get(clientPort) == true) {
+                                System.out.println("Peer " + sPort + " Completed Handshake from " + clientPort);
+
+                                //LATER ON IMPLEMENT ONLY SENDING IF THERE ARE PIECES
+                                ActualMessage bitFieldMessage = new ActualMessage(16, 5);
+                                sendMessage(MessageConversion.serialize(bitFieldMessage));
+                            }
+                        }
+                        else if (receivedMsg instanceof ActualMessage) {
+                            ActualMessage actualMessage = (ActualMessage) receivedMsg;
+                            if (actualMessage.getMessageType() == 5) {
+                                System.out.println("Peer " + sPort + " received Bitfield Message from " + clientPort);
+
+                                //LATER ON IMPLEMENT INTEREST OR NOT INTEREST
+                                ActualMessage interestMessage = new ActualMessage(1, 2);
+                                sendMessage(MessageConversion.serialize(interestMessage));
+                            }
+                            else if (actualMessage.getMessageType() == 2) {
+                                System.out.println("Peer " + sPort + " received interested Message from " + clientPort);
+                            }
+                            else if (actualMessage.getMessageType() == 3) {
+                                System.out.println("Peer " + sPort + " received not interested Message from " + clientPort);
                             }
                         }
                     }

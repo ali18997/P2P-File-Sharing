@@ -1,4 +1,6 @@
-public class ActualMessage {
+import java.io.Serializable;
+
+public class ActualMessage implements Serializable {
     private int messageLength;
     private byte messageType;
     private PayloadMessage payload;
