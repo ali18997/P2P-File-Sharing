@@ -15,9 +15,10 @@ public class Peer {
 
     public Peer(int port) throws IOException {
         peerPort = port;
-        server = new Server(peerPort);
         final File folder = new File(System.getProperty("user.dir") + "/peerFolder/" + port);
         listFilesForFolder(folder);
+        server = new Server(peerPort);
+        server.setFile(bitField, file);
     }
 
     public void connectToPeer(int port) throws IOException {
@@ -56,26 +57,6 @@ public class Peer {
                 BitField bitField = new BitField(fileName, bytes.length, PieceSize, bitFieldArr);
                 this.bitField = bitField;
                 this.file = bytes;
-
-
-                byte[] bitFieldArr2 = new byte[bitFieldArr.length];
-
-                for (int i = 0; i < bitFieldArr2.length; i++) {
-                    bitFieldArr2[i] = 0;
-                }
-
-                byte[] fileBytes = new byte[bytes.length];
-
-                for (int i = 0; i < bitFieldArr2.length; i++) {
-                    if (bitFieldArr2[i] == 0 && bitFieldArr[i] == 1) {
-                        byte[] a = Arrays.copyOfRange(bytes, i*PieceSize, i*PieceSize + PieceSize);
-                        fileBytes[i*PieceSize] = a[0];
-                        fileBytes[i*PieceSize+1] = a[1];
-                        bitFieldArr2[i] = 1;
-                    }
-                }
-
-                //Files.write(Paths.get(fileName), fileBytes);
             }
         }
     }

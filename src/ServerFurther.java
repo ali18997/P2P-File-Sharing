@@ -12,6 +12,8 @@ import java.util.*;
 
 public class ServerFurther {
 
+
+
     /**
      * A handler thread class.  Handlers are spawned from the listening
      * loop and are responsible for dealing with a single client's requests.
@@ -33,12 +35,17 @@ public class ServerFurther {
         private int index;
         private byte[] gettingFile;
 
+        public BitField bitfield;
+        public byte[] file;
+
         private HashMap<Integer, Boolean> handshakes = new HashMap<Integer, Boolean>();
 
-        public Handler(Socket connection, int no, int sPort) {
+        public Handler(Socket connection, int no, int sPort, BitField bitfield, byte[] file) {
             this.connection = connection;
             this.no = no;
             this.sPort = sPort;
+            this.bitfield = bitfield;
+            this.file = file;
         }
 
         public void run() {
@@ -64,7 +71,8 @@ public class ServerFurther {
                                 System.out.println("Peer " + sPort + " Completed Handshake from " + clientPort);
 
                                 //LATER ON IMPLEMENT ONLY SENDING IF THERE ARE PIECES
-                                ActualMessage bitFieldMessage = new ActualMessage(16, 5, null);
+
+                                ActualMessage bitFieldMessage = new ActualMessage(file.length, 5, new PayloadMessage(MessageConversion.messageToBytes(bitfield)));
                                 sendMessage(MessageConversion.messageToBytes(bitFieldMessage));
                             }
                         }
@@ -86,6 +94,8 @@ public class ServerFurther {
                             }
                             else if (actualMessage.getMessageType() == 2) {
                                 System.out.println("Peer " + sPort + " received interested Message from " + clientPort);
+                                ActualMessage unchokeMessage = new ActualMessage(1, 1, null);
+                                sendMessage(MessageConversion.messageToBytes(unchokeMessage));
                             }
                             else if (actualMessage.getMessageType() == 3) {
                                 System.out.println("Peer " + sPort + " received not interested Message from " + clientPort);
@@ -108,11 +118,20 @@ public class ServerFurther {
                                     ActualMessage interestMessage = new ActualMessage(1, 2, null);
                                     sendMessage(MessageConversion.messageToBytes(interestMessage));
                                 }
-                                //LATER ON IMPLEMENT INTEREST OR NOT INTEREST
 
                             }
                             else if (actualMessage.getMessageType() == 6) {
                                 //REQUEST
+                                int pieceNum = ByteBuffer.wrap(actualMessage.getPayload().getMessage()).getInt();
+
+                                System.out.println("Peer " + sPort + " received Request Message from " + clientPort + " for piece " + pieceNum);
+
+                                if (bitfield.bitField[pieceNum] == 1) {
+                                    byte[] piece = Arrays.copyOfRange(file, pieceNum*bitfield.PieceSize, pieceNum*bitfield.PieceSize + bitfield.PieceSize);
+                                    Piece pieceMsg = new Piece(actualMessage.getPayload().getMessage() ,piece);
+                                    ActualMessage interestMessage = new ActualMessage(1, 7, new PayloadMessage(MessageConversion.messageToBytes(pieceMsg)));
+                                    sendMessage(MessageConversion.messageToBytes(interestMessage));
+                                }
                             }
                             else if (actualMessage.getMessageType() == 7) {
                                 //PIECE
@@ -135,7 +154,7 @@ public class ServerFurther {
                                     }
                                 }
                                 else {
-                                    System.out.println("Peer " + sPort + " received complete file from "  + clientPort);
+                                    System.out.println("Peer " + sPort + " received complete file " + gettingFileName + " from "  + clientPort);
 
                                     Files.write(Path.of(System.getProperty("user.dir") + "/peerFolder/" + sPort + "/" + this.gettingFileName), this.gettingFile);
                                 }
