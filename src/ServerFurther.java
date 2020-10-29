@@ -40,7 +40,7 @@ public class ServerFurther {
                 try{
                     while(true)
                     {
-                        Object receivedMsg = MessageConversion.deserialize((byte[]) in.readObject());
+                        Object receivedMsg = MessageConversion.bytesToMessage((byte[]) in.readObject());
                         if (receivedMsg instanceof HandshakeMessage) {
                             HandshakeMessage handshakeMessage = (HandshakeMessage) receivedMsg;
                             clientPort = handshakeMessage.getPeerID();
@@ -48,30 +48,45 @@ public class ServerFurther {
                                 System.out.println("Peer " + sPort + " received Successful Handshake from " + clientPort);
                                 HandshakeMessage handshakeMessageBack = new HandshakeMessage(sPort);
                                 handshakes.put(clientPort, true);
-                                sendMessage(MessageConversion.serialize(handshakeMessageBack));
+                                sendMessage(MessageConversion.messageToBytes(handshakeMessageBack));
                             }
                             else if (handshakeMessage.getHeader().equals("P2PFILESHARINGPROJ") && handshakes.get(clientPort) == true) {
                                 System.out.println("Peer " + sPort + " Completed Handshake from " + clientPort);
 
                                 //LATER ON IMPLEMENT ONLY SENDING IF THERE ARE PIECES
                                 ActualMessage bitFieldMessage = new ActualMessage(16, 5);
-                                sendMessage(MessageConversion.serialize(bitFieldMessage));
+                                sendMessage(MessageConversion.messageToBytes(bitFieldMessage));
                             }
                         }
                         else if (receivedMsg instanceof ActualMessage) {
                             ActualMessage actualMessage = (ActualMessage) receivedMsg;
-                            if (actualMessage.getMessageType() == 5) {
-                                System.out.println("Peer " + sPort + " received Bitfield Message from " + clientPort);
-
-                                //LATER ON IMPLEMENT INTEREST OR NOT INTEREST
-                                ActualMessage interestMessage = new ActualMessage(1, 2);
-                                sendMessage(MessageConversion.serialize(interestMessage));
+                            if (actualMessage.getMessageType() == 0) {
+                                //CHOKE
+                            }
+                            else if (actualMessage.getMessageType() == 1) {
+                                //UNCHOKE
                             }
                             else if (actualMessage.getMessageType() == 2) {
                                 System.out.println("Peer " + sPort + " received interested Message from " + clientPort);
                             }
                             else if (actualMessage.getMessageType() == 3) {
                                 System.out.println("Peer " + sPort + " received not interested Message from " + clientPort);
+                            }
+                            else if (actualMessage.getMessageType() == 4) {
+                                //HAVE
+                            }
+                            else if (actualMessage.getMessageType() == 5) {
+                                System.out.println("Peer " + sPort + " received Bitfield Message from " + clientPort);
+
+                                //LATER ON IMPLEMENT INTEREST OR NOT INTEREST
+                                ActualMessage interestMessage = new ActualMessage(1, 2);
+                                sendMessage(MessageConversion.messageToBytes(interestMessage));
+                            }
+                            else if (actualMessage.getMessageType() == 6) {
+                                //REQUEST
+                            }
+                            else if (actualMessage.getMessageType() == 7) {
+                                //PIECE
                             }
                         }
                     }

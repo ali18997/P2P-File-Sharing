@@ -1,15 +1,15 @@
 import java.io.*;
 
 public class MessageConversion {
-    public static byte[] serialize(Object obj) throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ObjectOutputStream os = new ObjectOutputStream(out);
-        os.writeObject(obj);
-        return out.toByteArray();
+    public static byte[] messageToBytes(Object obj) throws IOException {
+        ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream();
+        ObjectOutputStream objectOutStream = new ObjectOutputStream(byteOutStream);
+        objectOutStream.writeObject(obj);
+        return byteOutStream.toByteArray();
     }
-    public static Object deserialize(byte[] data) throws IOException, ClassNotFoundException {
-        ByteArrayInputStream in = new ByteArrayInputStream(data);
-        ObjectInputStream is = new ObjectInputStream(in);
-        return is.readObject();
+    public static Object bytesToMessage(byte[] data) throws IOException, ClassNotFoundException {
+        ByteArrayInputStream byteInStream = new ByteArrayInputStream(data);
+        ObjectInputStream objectInStream = new ObjectInputStream(byteInStream);
+        return objectInStream.readObject();
     }
 }

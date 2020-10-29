@@ -42,33 +42,48 @@ public class Client {
             try {
                 try {
                     while (true) {
-                        Object receivedMsg = MessageConversion.deserialize((byte[]) in.readObject());
+                        Object receivedMsg = MessageConversion.bytesToMessage((byte[]) in.readObject());
                         if (receivedMsg instanceof HandshakeMessage) {
                             HandshakeMessage handshakeMessage = (HandshakeMessage) receivedMsg;
                             if (handshakeMessage.getHeader().equals("P2PFILESHARINGPROJ")) {
                                 System.out.println("Peer " + ownPort + " received Successful Handshake from " + handshakeMessage.getPeerID());
                                 HandshakeMessage handshakeMessageBack = new HandshakeMessage(ownPort);
-                                sendMessage(MessageConversion.serialize(handshakeMessageBack));
+                                sendMessage(MessageConversion.messageToBytes(handshakeMessageBack));
 
                                 //LATER ON IMPLEMENT ONLY SENDING IF THERE ARE PIECES
                                 ActualMessage bitFieldMessage = new ActualMessage(16, 5);
-                                sendMessage(MessageConversion.serialize(bitFieldMessage));
+                                sendMessage(MessageConversion.messageToBytes(bitFieldMessage));
                             }
                         }
                         else if (receivedMsg instanceof ActualMessage) {
                             ActualMessage actualMessage = (ActualMessage) receivedMsg;
-                            if (actualMessage.getMessageType() == 5) {
-                                System.out.println("Peer " + ownPort + " received Bitfield Message from " + othersPort);
-
-                                //LATER ON IMPLEMENT INTEREST OR NOT INTEREST
-                                ActualMessage interestMessage = new ActualMessage(1, 3);
-                                sendMessage(MessageConversion.serialize(interestMessage));
+                            if (actualMessage.getMessageType() == 0) {
+                                //CHOKE
+                            }
+                            else if (actualMessage.getMessageType() == 1) {
+                                //UNCHOKE
                             }
                             else if (actualMessage.getMessageType() == 2) {
                                 System.out.println("Peer " + ownPort + " received interested Message from " + othersPort);
                             }
                             else if (actualMessage.getMessageType() == 3) {
                                 System.out.println("Peer " + ownPort + " received not interested Message from " + othersPort);
+                            }
+                            else if (actualMessage.getMessageType() == 4) {
+                                //HAVE
+                            }
+                            else if (actualMessage.getMessageType() == 5) {
+                                System.out.println("Peer " + ownPort + " received Bitfield Message from " + othersPort);
+
+                                //LATER ON IMPLEMENT INTEREST OR NOT INTEREST
+                                ActualMessage interestMessage = new ActualMessage(1, 3);
+                                sendMessage(MessageConversion.messageToBytes(interestMessage));
+                            }
+                            else if (actualMessage.getMessageType() == 6) {
+                                //REQUEST
+                            }
+                            else if (actualMessage.getMessageType() == 7) {
+                                //PIECE
                             }
                         }
                     }
