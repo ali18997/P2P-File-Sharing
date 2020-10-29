@@ -1,7 +1,9 @@
-import model.BitField;
+
 
 import java.net.*;
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 public class Client {
     public Socket requestSocket;           //socket connect to the server
@@ -9,6 +11,9 @@ public class Client {
     public ObjectInputStream in;          //stream read from the socket
     public int ownPort;
     public int othersPort;
+
+    public BitField bitfield;
+    public byte[] file;
 
     public Client(int port, int ownPort) throws IOException {
         this.ownPort = ownPort;
@@ -24,6 +29,11 @@ public class Client {
     public void sendMessage(byte[] msg) throws IOException {
         out.writeObject(msg);
         out.flush();
+    }
+
+    public void setFile(BitField bitfield, byte[] file){
+        this.bitfield = bitfield;
+        this.file = file;
     }
 
     public String getMessage() throws IOException, ClassNotFoundException {
@@ -51,7 +61,7 @@ public class Client {
                                 sendMessage(MessageConversion.messageToBytes(handshakeMessageBack));
 
                                 //LATER ON IMPLEMENT ONLY SENDING IF THERE ARE PIECES
-                                ActualMessage bitFieldMessage = new ActualMessage(16, 5);
+                                ActualMessage bitFieldMessage = new ActualMessage(file.length, 5, new PayloadMessage(MessageConversion.messageToBytes(bitfield)));
                                 sendMessage(MessageConversion.messageToBytes(bitFieldMessage));
                             }
                         }
@@ -65,6 +75,9 @@ public class Client {
                             }
                             else if (actualMessage.getMessageType() == 2) {
                                 System.out.println("Peer " + ownPort + " received interested Message from " + othersPort);
+
+                                ActualMessage unchokeMessage = new ActualMessage(1, 1, null);
+                                sendMessage(MessageConversion.messageToBytes(unchokeMessage));
                             }
                             else if (actualMessage.getMessageType() == 3) {
                                 System.out.println("Peer " + ownPort + " received not interested Message from " + othersPort);
@@ -76,11 +89,23 @@ public class Client {
                                 System.out.println("Peer " + ownPort + " received Bitfield Message from " + othersPort);
 
                                 //LATER ON IMPLEMENT INTEREST OR NOT INTEREST
-                                ActualMessage interestMessage = new ActualMessage(1, 3);
+                                ActualMessage interestMessage = new ActualMessage(1, 3, null);
                                 sendMessage(MessageConversion.messageToBytes(interestMessage));
                             }
                             else if (actualMessage.getMessageType() == 6) {
                                 //REQUEST
+
+                                int pieceNum = ByteBuffer.wrap(actualMessage.getPayload().getMessage()).getInt();
+
+                                System.out.println("Peer " + ownPort + " received Request Message from " + othersPort + " for piece " + pieceNum);
+
+                                if (bitfield.bitField[pieceNum] == 1) {
+                                    byte[] piece = Arrays.copyOfRange(file, pieceNum*bitfield.PieceSize, pieceNum*bitfield.PieceSize + bitfield.PieceSize);
+                                    Piece pieceMsg = new Piece(actualMessage.getPayload().getMessage() ,piece);
+                                    ActualMessage interestMessage = new ActualMessage(1, 7, new PayloadMessage(MessageConversion.messageToBytes(pieceMsg)));
+                                    sendMessage(MessageConversion.messageToBytes(interestMessage));
+                                }
+
                             }
                             else if (actualMessage.getMessageType() == 7) {
                                 //PIECE

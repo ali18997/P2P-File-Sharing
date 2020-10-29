@@ -6,4 +6,8 @@ public class PayloadMessage implements Serializable {
     public PayloadMessage(byte[] message){
         this.message = message;
     }
+
+    public byte[] getMessage() {
+        return message;
+    }
 }
