@@ -142,7 +142,9 @@ public class Client {
                                 System.out.println("Peer " + ownPort + " received Piece " + pieceNum + " from "  + othersPort);
                                 byte[] piece = a.getPiece();
                                 for (int i = 0; i < gettingFilePieceSize; i++) {
-                                    gettingFile[pieceNum*gettingFilePieceSize + i] = piece[i];
+                                    if(pieceNum*gettingFilePieceSize + i < gettingFile.length) {
+                                        gettingFile[pieceNum * gettingFilePieceSize + i] = piece[i];
+                                    }
                                 }
                                 ownBitField[pieceNum] = 1;
 

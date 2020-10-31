@@ -3,11 +3,11 @@ public class main {
         //peerProcess a = new peerProcess();
         //a.start(new String[]{"1000"});
 
-        Peer a = new Peer(2000);
-        Peer b = new Peer(3000);
+        Peer a = new Peer(4000);
+        Peer b = new Peer(5000);
 
-        a.connectToPeer(3000);
-        a.handShakePeer(3000);
+        a.connectToPeer(5000);
+        a.handShakePeer(5000);
 
 
     }

@@ -140,7 +140,9 @@ public class ServerFurther {
                                 System.out.println("Peer " + sPort + " received Piece " + pieceNum + " from "  + clientPort);
                                 byte[] piece = a.getPiece();
                                 for (int i = 0; i < gettingFilePieceSize; i++) {
-                                    this.gettingFile[pieceNum*this.gettingFilePieceSize + i] = piece[i];
+                                    if(pieceNum*this.gettingFilePieceSize + i < gettingFile.length) {
+                                        this.gettingFile[pieceNum * this.gettingFilePieceSize + i] = piece[i];
+                                    }
                                 }
                                 this.ownBitField[pieceNum] = 1;
 
