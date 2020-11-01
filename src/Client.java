@@ -51,6 +51,31 @@ public class Client {
         requestSocket.close();
     }
 
+    public void requestPiece() throws IOException {
+        outerloop:
+        for (Map.Entry mapElement : serverBitFields.entrySet()) {
+            String name = (String) mapElement.getKey();
+            BitField bitFieldServer = ((BitField) mapElement.getValue());
+
+            if (bitFields.containsKey(name)) {
+                BitField bitFieldClient = bitFields.get(name);
+                int length = bitFieldClient.bitField.length;
+                for (int i = 0; i < length; i++) {
+                    if (bitFieldClient.bitField[i] == 0 && bitFieldServer.bitField[i] == 1) {
+                        byte[] pieceIndex = ByteBuffer.allocate(4).putInt(i).array();
+                        Request request = new Request(name, pieceIndex);
+                        PayloadMessage pieceRequest = new PayloadMessage(MessageConversion.messageToBytes(request));
+                        ActualMessage requestMessage = new ActualMessage(1, 6, pieceRequest);
+                        sendMessage(MessageConversion.messageToBytes(requestMessage));
+                        break outerloop;
+                    }
+                }
+            } else {
+                System.out.println("ERROR 500");
+            }
+        }
+    }
+
     public class MessageReceiving extends Thread {
         public void run() {
             try {
@@ -80,30 +105,7 @@ public class Client {
                             else if (actualMessage.getMessageType() == 1) {
                                 //UNCHOKE
                                 System.out.println("Peer " + ownPort + " received UnChoke Message from " + othersPort);
-
-                                outerloop:
-                                for (Map.Entry mapElement : serverBitFields.entrySet()) {
-                                    String name = (String)mapElement.getKey();
-                                    BitField bitFieldServer = ((BitField)mapElement.getValue());
-
-                                    if (bitFields.containsKey(name)){
-                                        BitField bitFieldClient = bitFields.get(name);
-                                        int length = bitFieldClient.bitField.length;
-                                        for (int i = 0; i < length; i++) {
-                                            if (bitFieldClient.bitField[i] == 0 &&  bitFieldServer.bitField[i] == 1) {
-                                                byte[] pieceIndex = ByteBuffer.allocate(4).putInt(i).array();
-                                                Request request = new Request(name, pieceIndex);
-                                                PayloadMessage pieceRequest = new PayloadMessage(MessageConversion.messageToBytes(request));
-                                                ActualMessage requestMessage = new ActualMessage(1, 6, pieceRequest);
-                                                sendMessage(MessageConversion.messageToBytes(requestMessage));
-                                                break outerloop;
-                                            }
-                                        }
-                                    }
-                                    else {
-                                        System.out.println("ERROR 500");
-                                    }
-                                }
+                                requestPiece();
                             }
                             else if (actualMessage.getMessageType() == 2) {
                                 //Interested
@@ -198,41 +200,7 @@ public class Client {
                                 bitFields.get(fname).getBitField()[pieceNum] = 1;
 
                                 if (pieceNum < bitFields.get(fname).getBitField().length-1) {
-                                    outerloop:
-                                    for (Map.Entry mapElement : serverBitFields.entrySet()) {
-                                        String name = (String)mapElement.getKey();
-                                        BitField bitFieldServer = ((BitField)mapElement.getValue());
-
-                                        if (bitFields.containsKey(name)){
-                                            BitField bitFieldClient = bitFields.get(name);
-                                            int length = bitFieldClient.bitField.length;
-                                            for (int i = 0; i < length; i++) {
-                                                if (bitFieldClient.bitField[i] == 0 &&  bitFieldServer.bitField[i] == 1) {
-                                                    byte[] pieceIndex = ByteBuffer.allocate(4).putInt(i).array();
-                                                    Request request = new Request(name, pieceIndex);
-                                                    PayloadMessage pieceRequest = new PayloadMessage(MessageConversion.messageToBytes(request));
-                                                    ActualMessage requestMessage = new ActualMessage(1, 6, pieceRequest);
-                                                    sendMessage(MessageConversion.messageToBytes(requestMessage));
-                                                    break outerloop;
-                                                }
-                                            }
-                                        }
-                                        else {
-                                            byte[] pieceIndex = ByteBuffer.allocate(4).putInt(0).array();
-                                            Request request = new Request(name, pieceIndex);
-                                            PayloadMessage pieceRequest = new PayloadMessage(MessageConversion.messageToBytes(request));
-                                            ActualMessage requestMessage = new ActualMessage(1, 6, pieceRequest);
-                                            sendMessage(MessageConversion.messageToBytes(requestMessage));
-                                            BitField temp = bitFieldServer;
-                                            for (int i = 0; i < temp.getBitField().length; i++) {
-                                                temp.getBitField()[i] = 0;
-                                            }
-                                            byte[] temp2 = new byte[temp.getFileSize()];
-                                            bitFields.put(name, temp);
-                                            files.put(name, temp2);
-                                            break outerloop;
-                                        }
-                                    }
+                                    requestPiece();
                                 }
                                 else {
                                     System.out.println("Peer " + ownPort + " received complete file " + fname + " from "  + othersPort);

@@ -36,6 +36,32 @@ public class ServerFurther {
             this.files = files;
         }
 
+        public void requestPiece() throws IOException {
+            outerloop:
+            for (Map.Entry mapElement : clientBitFields.entrySet()) {
+                String name = (String)mapElement.getKey();
+                BitField bitFieldClient = ((BitField)mapElement.getValue());
+
+                if (bitFields.containsKey(name)){
+                    BitField bitFieldServer = bitFields.get(name);
+                    int length = bitFieldServer.bitField.length;
+                    for (int i = 0; i < length; i++) {
+                        if (bitFieldServer.bitField[i] == 0 &&  bitFieldClient.bitField[i] == 1) {
+                            byte[] pieceIndex = ByteBuffer.allocate(4).putInt(i).array();
+                            Request request = new Request(name, pieceIndex);
+                            PayloadMessage pieceRequest = new PayloadMessage(MessageConversion.messageToBytes(request));
+                            ActualMessage requestMessage = new ActualMessage(1, 6, pieceRequest);
+                            sendMessage(MessageConversion.messageToBytes(requestMessage));
+                            break outerloop;
+                        }
+                    }
+                }
+                else {
+                    System.out.println("ERROR 500");
+                }
+            }
+        }
+
         public void run() {
             try{
                 //initialize Input and Output streams
@@ -76,30 +102,7 @@ public class ServerFurther {
                             else if (actualMessage.getMessageType() == 1) {
                                 //UNCHOKE
                                 System.out.println("Peer " + sPort + " received UnChoke Message from " + clientPort);
-                                outerloop:
-                                for (Map.Entry mapElement : clientBitFields.entrySet()) {
-                                    String name = (String)mapElement.getKey();
-                                    BitField bitFieldClient = ((BitField)mapElement.getValue());
-
-                                    if (bitFields.containsKey(name)){
-                                        BitField bitFieldServer = bitFields.get(name);
-                                        int length = bitFieldServer.bitField.length;
-                                        for (int i = 0; i < length; i++) {
-                                            if (bitFieldServer.bitField[i] == 0 &&  bitFieldClient.bitField[i] == 1) {
-                                                byte[] pieceIndex = ByteBuffer.allocate(4).putInt(i).array();
-                                                Request request = new Request(name, pieceIndex);
-                                                PayloadMessage pieceRequest = new PayloadMessage(MessageConversion.messageToBytes(request));
-                                                ActualMessage requestMessage = new ActualMessage(1, 6, pieceRequest);
-                                                sendMessage(MessageConversion.messageToBytes(requestMessage));
-                                                break outerloop;
-                                            }
-                                        }
-                                    }
-                                    else {
-                                        System.out.println("ERROR 500");
-                                    }
-                                }
-
+                                requestPiece();
                             }
                             else if (actualMessage.getMessageType() == 2) {
                                 System.out.println("Peer " + sPort + " received interested Message from " + clientPort);
@@ -194,39 +197,15 @@ public class ServerFurther {
                                 bitFields.get(fname).getBitField()[pieceNum] = 1;
 
                                 if (pieceNum < bitFields.get(fname).getBitField().length-1) {
-                                    outerloop:
-                                    for (Map.Entry mapElement : clientBitFields.entrySet()) {
-                                        String name = (String)mapElement.getKey();
-                                        BitField bitFieldClient = ((BitField)mapElement.getValue());
-
-                                        if (bitFields.containsKey(name)){
-                                            BitField bitFieldServer = bitFields.get(name);
-                                            int length = bitFieldServer.bitField.length;
-                                            for (int i = 0; i < length; i++) {
-                                                if (bitFieldServer.bitField[i] == 0 &&  bitFieldClient.bitField[i] == 1) {
-                                                    byte[] pieceIndex = ByteBuffer.allocate(4).putInt(i).array();
-                                                    Request request = new Request(name, pieceIndex);
-                                                    PayloadMessage pieceRequest = new PayloadMessage(MessageConversion.messageToBytes(request));
-                                                    ActualMessage requestMessage = new ActualMessage(1, 6, pieceRequest);
-                                                    sendMessage(MessageConversion.messageToBytes(requestMessage));
-                                                    break outerloop;
-                                                }
-                                            }
-                                        }
-                                        else {
-                                            System.out.println("ERROR 500");
-                                        }
-                                    }
+                                    requestPiece();
                                 }
                                 else {
 
                                     System.out.println("Peer " + sPort + " received complete file " + fname + " from "  + clientPort);
 
                                     Files.write(Path.of(System.getProperty("user.dir") + "/peerFolder/" + sPort + "/" + fname), files.get(fname));
+
                                 }
-
-
-
 
                             }
                         }
