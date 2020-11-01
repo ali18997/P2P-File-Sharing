@@ -29,13 +29,39 @@ public class ServerFurther {
 
         private HashMap<Integer, Boolean> handshakes = new HashMap<Integer, Boolean>();
 
-        public Handler(Socket connection, int no, int serverPort, HashMap<String, BitField> bitFields, HashMap<String, byte[]> files) {
+        public Handler(Socket connection, int no, int serverPort) throws IOException {
             this.connection = connection;
             this.no = no;
             this.serverPort = serverPort;
-            this.bitFields = bitFields;
-            this.files = files;
+            prepareBitFields();
         }
+
+
+        public void readActualFile(String name) throws IOException {
+            final File folder = new File(System.getProperty("user.dir") + "/peerFolder/" + serverPort);
+            for (final File fileEntry : folder.listFiles()) {
+                if (name.equals(fileEntry.getName())) {
+                    byte[] bytes = Files.readAllBytes(fileEntry.toPath());
+                    files.put(name, bytes);
+                }
+            }
+        }
+
+        public void prepareBitFields() throws IOException {
+            final File folder = new File(System.getProperty("user.dir") + "/peerFolder/" + serverPort);
+            for (final File fileEntry : folder.listFiles()) {
+                String fileName = fileEntry.getName();
+                int PieceSize = 2;
+                int fsize = (int) Files.size(fileEntry.toPath());
+                byte[] bitFieldArr = new byte[(int) Math.ceil((double)fsize/PieceSize)];
+                for (int i = 0; i < bitFieldArr.length; i++) {
+                    bitFieldArr[i] = 1;
+                }
+                BitField bitField = new BitField(fileName, fsize, PieceSize, bitFieldArr);
+                this.bitFields.put(fileName, bitField);
+            }
+        }
+
 
         public void prepareToReceiveFile(BitField bitField){
             BitField temp = new BitField(bitField.getFileName(), bitField.getFileSize(), bitField.getPieceSize(), new byte[bitField.getBitField().length]);
@@ -108,7 +134,7 @@ public class ServerFurther {
                                 for (Map.Entry mapElement : bitFields.entrySet()) {
                                     String name = (String)mapElement.getKey();
                                     BitField bitField = ((BitField)mapElement.getValue());
-                                    ActualMessage bitFieldMessage = new ActualMessage(files.get(name).length, 5, new PayloadMessage(MessageConversion.messageToBytes(bitField)));
+                                    ActualMessage bitFieldMessage = new ActualMessage(1, 5, new PayloadMessage(MessageConversion.messageToBytes(bitField)));
                                     sendMessage(MessageConversion.messageToBytes(bitFieldMessage));
                                 }
                             }
@@ -183,6 +209,11 @@ public class ServerFurther {
 
                                 Request msg = (Request) MessageConversion.bytesToMessage(actualMessage.getPayload().getMessage());
                                 String name = msg.FileName;
+
+                                if(!files.containsKey(name)){
+                                    readActualFile(name);
+                                }
+
                                 int pieceNum = ByteBuffer.wrap(msg.pieceIndex).getInt();
 
                                 System.out.println("Peer " + serverPort + " received Request Message from " + clientPort + " for file: " + name + " piece: " + pieceNum);
