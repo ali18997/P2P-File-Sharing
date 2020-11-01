@@ -5,7 +5,6 @@ public class main {
         Peer b = new Peer(5000);
 
         a.connectToPeer(5000);
-        a.handShakePeer(5000);
 
     }
 }

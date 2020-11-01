@@ -17,6 +17,7 @@ public class Peer {
     public void connectToPeer(int port) throws IOException {
         Client temp = new Client(port, peerPort);
         clients.put(port, temp);
+        handShakePeer(port);
     }
 
     public void handShakePeer(int port) throws IOException {
