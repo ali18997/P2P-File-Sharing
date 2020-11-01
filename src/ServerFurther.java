@@ -49,6 +49,7 @@ public class ServerFurther {
 
         public void prepareBitFields() throws IOException {
             final File folder = new File(System.getProperty("user.dir") + "/peerFolder/" + serverPort);
+            if (!folder.exists()){folder.mkdir();}
             for (final File fileEntry : folder.listFiles()) {
                 String fileName = fileEntry.getName();
                 int PieceSize = 2;

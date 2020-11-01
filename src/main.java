@@ -3,8 +3,10 @@ public class main {
 
         Peer a = new Peer(4000);
         Peer b = new Peer(5000);
+        Peer c = new Peer(7000);
 
-        a.connectToPeer(5000);
+        c.connectToPeer(4000);
+        c.connectToPeer(5000);
 
     }
 }
