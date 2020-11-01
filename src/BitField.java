@@ -29,4 +29,6 @@ public class BitField implements Serializable {
     public byte[] getBitField() {
         return bitField;
     }
+
+
 }

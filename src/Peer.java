@@ -9,21 +9,25 @@ import java.util.HashMap;
 public class Peer {
     private int peerPort;   //The server will be listening on this port number
     private Server server;
+
     private HashMap<Integer, Client> clients = new HashMap<Integer, Client>();
-    private BitField bitField;
-    private byte[] file;
+    private HashMap<String, BitField> bitFields = new HashMap<String, BitField>();
+    private HashMap<String, byte[]> files = new HashMap<String, byte[]>();
+
+    //private BitField bitField;
+    //private byte[] file;
 
     public Peer(int port) throws IOException {
         peerPort = port;
         final File folder = new File(System.getProperty("user.dir") + "/peerFolder/" + port);
         listFilesForFolder(folder);
         server = new Server(peerPort);
-        server.setFile(bitField, file);
+        server.setFile(bitFields, files);
     }
 
     public void connectToPeer(int port) throws IOException {
         Client temp = new Client(port, peerPort);
-        temp.setFile(bitField, file);
+        temp.setFile(bitFields, files);
         clients.put(port, temp);
     }
 
@@ -55,8 +59,10 @@ public class Peer {
                     bitFieldArr[i] = 1;
                 }
                 BitField bitField = new BitField(fileName, bytes.length, PieceSize, bitFieldArr);
-                this.bitField = bitField;
-                this.file = bytes;
+                this.bitFields.put(fileName, bitField);
+                this.files.put(fileName, bytes);
+                //this.bitField = bitField;
+                //this.file = bytes;
             }
         }
     }
