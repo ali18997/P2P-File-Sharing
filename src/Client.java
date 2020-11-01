@@ -248,6 +248,8 @@ public class Client {
                                     System.out.println("Peer " + clientPort + " received complete file " + fname + " from "  + serverPort);
 
                                     Files.write(Path.of(System.getProperty("user.dir") + "/peerFolder/" + clientPort + "/" + fname), files.get(fname));
+
+                                    files.remove(fname);
                                 }
                                 requestPiece();
                             }

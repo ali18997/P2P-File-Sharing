@@ -245,6 +245,8 @@ public class ServerFurther {
                                     System.out.println("Peer " + serverPort + " received complete file " + fname + " from "  + clientPort);
 
                                     Files.write(Path.of(System.getProperty("user.dir") + "/peerFolder/" + serverPort + "/" + fname), files.get(fname));
+
+                                    files.remove(fname);
                                 }
                                 requestPiece();
                             }
