@@ -146,12 +146,10 @@ public class ServerFurther {
                                         ActualMessage interestMessage = new ActualMessage(1, 2, null);
                                         sendMessage(MessageConversion.messageToBytes(interestMessage));
                                         flag = false;
-                                        System.out.println(clientBitFields.get(bitField.getFileName()).getBitField()[0]);
                                         BitField temp = new BitField(bitFieldClient.getFileName(), bitFieldClient.getFileSize(), bitFieldClient.getPieceSize(), new byte[bitFieldClient.getBitField().length]);
                                         for (int i = 0; i < temp.getBitField().length; i++) {
                                             temp.getBitField()[i] = 0;
                                         }
-                                        System.out.println(clientBitFields.get(bitField.getFileName()).getBitField()[0]);
                                         byte[] temp2 = new byte[temp.getFileSize()];
                                         bitFields.put(name, temp);
                                         files.put(name, temp2);
@@ -205,6 +203,7 @@ public class ServerFurther {
 
                                     Files.write(Path.of(System.getProperty("user.dir") + "/peerFolder/" + sPort + "/" + fname), files.get(fname));
 
+                                    requestPiece();
                                 }
 
                             }
