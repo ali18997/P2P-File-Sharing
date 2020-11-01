@@ -57,7 +57,21 @@ public class ServerFurther {
                     }
                 }
                 else {
-                    System.out.println("ERROR 500");
+                    BitField temp = new BitField(bitFieldClient.getFileName(), bitFieldClient.getFileSize(), bitFieldClient.getPieceSize(), new byte[bitFieldClient.getBitField().length]);
+                    for (int i = 0; i < temp.getBitField().length; i++) {
+                        temp.getBitField()[i] = 0;
+                    }
+                    byte[] temp2 = new byte[temp.getFileSize()];
+                    bitFields.put(name, temp);
+                    files.put(name, temp2);
+
+                    byte[] pieceIndex = ByteBuffer.allocate(4).putInt(0).array();
+                    Request request = new Request(name, pieceIndex);
+                    PayloadMessage pieceRequest = new PayloadMessage(MessageConversion.messageToBytes(request));
+                    ActualMessage requestMessage = new ActualMessage(1, 6, pieceRequest);
+                    sendMessage(MessageConversion.messageToBytes(requestMessage));
+
+                    break outerloop;
                 }
             }
         }
@@ -194,18 +208,12 @@ public class ServerFurther {
                                 }
                                 bitFields.get(fname).getBitField()[pieceNum] = 1;
 
-                                if (pieceNum < bitFields.get(fname).getBitField().length-1) {
-                                    requestPiece();
-                                }
-                                else {
-
+                                if (pieceNum == bitFields.get(fname).getBitField().length-1) {
                                     System.out.println("Peer " + sPort + " received complete file " + fname + " from "  + clientPort);
 
                                     Files.write(Path.of(System.getProperty("user.dir") + "/peerFolder/" + sPort + "/" + fname), files.get(fname));
-
-                                    requestPiece();
                                 }
-
+                                requestPiece();
                             }
                         }
                     }
