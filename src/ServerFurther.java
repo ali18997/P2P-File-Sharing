@@ -173,6 +173,7 @@ public class ServerFurther {
                                     if (flag) {
                                         ActualMessage notInterestMessage = new ActualMessage(1, 3, null);
                                         sendMessage(MessageConversion.messageToBytes(notInterestMessage));
+                                        requestFlag = false;
                                     }
                                 }
 
