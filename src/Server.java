@@ -4,7 +4,18 @@ import java.util.HashMap;
 
 public class Server {
 
-    public Server(int port) {
+    private int PieceSize;
+
+    private HashMap<String, BitField> bitFields;
+    private HashMap<String, byte[]> files;
+    private HashMap<String, byte[]> requestBitFields;
+
+    public Server(int port, HashMap<String, byte[]> requestBitFields, HashMap<String, BitField> bitFields, HashMap<String, byte[]> files, int PieceSize) {
+
+        this.requestBitFields = requestBitFields;
+        this.bitFields = bitFields;
+        this.files = files;
+        this.PieceSize = PieceSize;
         new Handler(port).start();
     }
 
@@ -27,7 +38,7 @@ public class Server {
             try {
                 while(true) {
                     try {
-                        new ServerFurther.Handler(listener.accept(),clientNum, sPort).start();
+                        new ServerFurther.Handler(listener.accept(),clientNum, sPort, requestBitFields, bitFields, files, PieceSize).start();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }

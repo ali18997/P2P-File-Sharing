@@ -8,14 +8,18 @@ public class Peer {
     private Server server;
 
     private HashMap<Integer, Client> clients = new HashMap<Integer, Client>();
+    private HashMap<String, byte[]> requestBitFields = new HashMap<String, byte[]>();
+    private HashMap<String, BitField> bitFields = new HashMap<String, BitField>();
+    private HashMap<String, byte[]> files = new HashMap<String, byte[]>();
+    private int PieceSize = 3;
 
     public Peer(int port) throws IOException {
         peerPort = port;
-        server = new Server(peerPort);
+        server = new Server(peerPort, requestBitFields, bitFields, files, PieceSize);
     }
 
     public void connectToPeer(int port) throws IOException {
-        Client temp = new Client(port, peerPort);
+        Client temp = new Client(port, peerPort, requestBitFields, bitFields, files, PieceSize);
         clients.put(port, temp);
         handShakePeer(port);
     }

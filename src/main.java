@@ -5,8 +5,8 @@ public class main {
         Peer b = new Peer(5000);
         Peer c = new Peer(7000);
 
-        c.connectToPeer(4000);
-        c.connectToPeer(5000);
+        a.connectToPeer(7000);
+        b.connectToPeer(7000);
 
     }
 }

@@ -14,16 +14,20 @@ public class Client {
     public int clientPort;
     public int serverPort;
     private Boolean requestFlag = false;
+    private int PieceSize;
 
-
-
-    private HashMap<String, BitField> bitFields = new HashMap<String, BitField>();
-    private HashMap<String, byte[]> files = new HashMap<String, byte[]>();
+    private HashMap<String, BitField> bitFields;
+    private HashMap<String, byte[]> files;
     private HashMap<String, BitField> serverBitFields = new HashMap<String, BitField>();
+    private HashMap<String, byte[]> requestBitFields;
 
-    public Client(int port, int clientPort) throws IOException {
+    public Client(int port, int clientPort, HashMap<String, byte[]> requestBitFields, HashMap<String, BitField> bitFields, HashMap<String, byte[]> files, int PieceSize) throws IOException {
         this.clientPort = clientPort;
         this.serverPort = port;
+        this.requestBitFields = requestBitFields;
+        this.bitFields = bitFields;
+        this.files = files;
+        this.PieceSize = PieceSize;
         requestSocket = new Socket("localhost", port);
         System.out.println("Connected to localhost in port " + port);
         out = new ObjectOutputStream(requestSocket.getOutputStream());
@@ -48,7 +52,7 @@ public class Client {
         if (!folder.exists()){folder.mkdir();}
         for (final File fileEntry : folder.listFiles()) {
                 String fileName = fileEntry.getName();
-                int PieceSize = 2;
+
                 int fsize = (int) Files.size(fileEntry.toPath());
                 byte[] bitFieldArr = new byte[(int) Math.ceil((double)fsize/PieceSize)];
                 for (int i = 0; i < bitFieldArr.length; i++) {
@@ -77,12 +81,15 @@ public class Client {
 
     public void prepareToReceiveFile(BitField bitField){
         BitField temp = new BitField(bitField.getFileName(), bitField.getFileSize(), bitField.getPieceSize(), new byte[bitField.getBitField().length]);
+        byte[] temp3 = new byte[bitField.getBitField().length];
         for (int i = 0; i < temp.getBitField().length; i++) {
             temp.getBitField()[i] = 0;
+            temp3[i] = 0;
         }
         byte[] temp2 = new byte[temp.getFileSize()];
         bitFields.put(bitField.getFileName(), temp);
         files.put(bitField.getFileName(), temp2);
+        requestBitFields.put(bitField.getFileName(), temp3);
     }
 
     public void requestPiece() throws IOException {
@@ -95,7 +102,8 @@ public class Client {
                 BitField bitFieldClient = bitFields.get(name);
                 int length = bitFieldClient.bitField.length;
                 for (int i = 0; i < length; i++) {
-                    if (bitFieldClient.bitField[i] == 0 && bitFieldServer.bitField[i] == 1) {
+                    if (bitFieldClient.bitField[i] == 0 && bitFieldServer.bitField[i] == 1 && requestBitFields.get(name)[i] == 0) {
+                        requestBitFields.get(name)[i] = 1;
                         byte[] pieceIndex = ByteBuffer.allocate(4).putInt(i).array();
                         Request request = new Request(name, pieceIndex);
                         PayloadMessage pieceRequest = new PayloadMessage(MessageConversion.messageToBytes(request));
@@ -182,7 +190,7 @@ public class Client {
                                             BitField bitFieldClient = bitFields.get(name);
                                             int length = bitFieldClient.bitField.length;
                                             for (int i = 0; i < length; i++) {
-                                                if (bitFieldClient.bitField[i] == 0 && bitFieldServer.bitField[i] == 1) {
+                                                if (bitFieldClient.bitField[i] == 0 && bitFieldServer.bitField[i] == 1 && requestBitFields.get(name)[i] == 0) {
                                                     ActualMessage interestMessage = new ActualMessage(1, 2, null);
                                                     sendMessage(MessageConversion.messageToBytes(interestMessage));
                                                     flag = false;
