@@ -310,13 +310,18 @@ public class Client {
                                     Piece pieceMsg = new Piece(name, msg.getPieceIndex() ,piece);
                                     ActualMessage interestMessage = new ActualMessage(1, 7, new PayloadMessage(MessageConversion.messageToBytes(pieceMsg)));
                                     sendMessage(MessageConversion.messageToBytes(interestMessage));
-                                }
-                                if(serverBitFields.containsKey(name)){
+
+                                    if(!serverBitFields.containsKey(name)){
+                                        BitField temp = bitFields.get(name);
+                                        BitField temp2 = new BitField(temp.FileName, temp.FileSize, temp.PieceSize, new byte[temp.getBitField().length]);
+                                        for (int i = 0; i < temp.getBitField().length; i++) {
+                                            temp2.getBitField()[i] = 0;
+                                        }
+                                        serverBitFields.put(name, temp2);
+                                    }
                                     serverBitFields.get(name).bitField[pieceNum] = 1;
                                 }
-                                else {
-                                    System.out.println("ERROR");
-                                }
+
 
                             }
                             else if (actualMessage.getMessageType() == 7) {
@@ -342,7 +347,7 @@ public class Client {
 
                                     Files.write(Path.of(System.getProperty("user.dir") + "/peerFolder/" + clientPort + "/" + fname), files.get(fname));
 
-                                    files.remove(fname);
+                                    //files.remove(fname);
                                 }
                                 requestPiece();
                             }

@@ -8,7 +8,7 @@ public class main {
 
         a.connectToPeer(7000);
         b.connectToPeer(7000);
-        c.connectToPeer(8000);
+        d.connectToPeer(7000);
 
     }
 }
