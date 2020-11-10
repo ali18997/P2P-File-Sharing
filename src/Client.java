@@ -170,6 +170,20 @@ public class Client {
                             }
                             else if (actualMessage.getMessageType() == 4) {
                                 //HAVE
+                                Have msg = (Have) MessageConversion.bytesToMessage(actualMessage.getPayload().getMessage());
+                                String name = msg.getFileName();
+
+                                int pieceNum = ByteBuffer.wrap(msg.getPieceIndex()).getInt();
+
+                                if (!serverBitFields.containsKey(name)){
+                                   serverBitFields.put(name, msg.getBitField());
+                                }
+
+                                serverBitFields.get(name).getBitField()[pieceNum] = 1;
+
+                                System.out.println("Peer " + clientPort + " received Have Message from " + serverPort + " for file: " + name + " piece: " + pieceNum);
+
+                                requestPiece();
                             }
                             else if (actualMessage.getMessageType() == 5) {
                                 System.out.println("Peer " + clientPort + " received Bitfield Message from " + serverPort);
@@ -217,20 +231,20 @@ public class Client {
                                 //REQUEST
 
                                 Request msg = (Request) MessageConversion.bytesToMessage(actualMessage.getPayload().getMessage());
-                                String name = msg.FileName;
+                                String name = msg.getFileName();
 
 
                                 if(!files.containsKey(name)){
                                     readActualFile(name);
                                 }
 
-                                int pieceNum = ByteBuffer.wrap(msg.pieceIndex).getInt();
+                                int pieceNum = ByteBuffer.wrap(msg.getPieceIndex()).getInt();
 
                                 System.out.println("Peer " + clientPort + " received Request Message from " + serverPort + " for file: " + name + " piece: " + pieceNum);
 
                                 if (bitFields.get(name).bitField[pieceNum] == 1) {
                                     byte[] piece = Arrays.copyOfRange(files.get(name), pieceNum*bitFields.get(name).PieceSize, pieceNum*bitFields.get(name).PieceSize + bitFields.get(name).PieceSize);
-                                    Piece pieceMsg = new Piece(name, msg.pieceIndex ,piece);
+                                    Piece pieceMsg = new Piece(name, msg.getPieceIndex() ,piece);
                                     ActualMessage interestMessage = new ActualMessage(1, 7, new PayloadMessage(MessageConversion.messageToBytes(pieceMsg)));
                                     sendMessage(MessageConversion.messageToBytes(interestMessage));
                                 }

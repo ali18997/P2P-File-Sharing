@@ -1,12 +1,14 @@
 import java.io.Serializable;
 
-public class Request implements Serializable {
+public class Have implements Serializable {
     private String FileName;
     private byte[] pieceIndex;
+    private BitField bitField;
 
-    public Request (String FileName, byte[] pieceIndex) {
+    public Have (String FileName, byte[] pieceIndex, BitField bitField) {
         this.FileName = FileName;
         this.pieceIndex = pieceIndex;
+        this.bitField = bitField;
     }
 
     public byte[] getPieceIndex() {
@@ -15,5 +17,9 @@ public class Request implements Serializable {
 
     public String getFileName() {
         return FileName;
+    }
+
+    public BitField getBitField() {
+        return bitField;
     }
 }

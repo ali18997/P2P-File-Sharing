@@ -11,7 +11,6 @@ public class ActualMessage implements Serializable {
             this.payload = null;
         }
         else if (type == 4) {
-            byte[] pieceIndex =  new byte[4];
             this.payload = payload;
         }
         else if (type == 5) {
