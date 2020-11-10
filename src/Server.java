@@ -9,14 +9,16 @@ public class Server {
     private HashMap<String, BitField> bitFields;
     private HashMap<String, byte[]> files;
     private HashMap<String, byte[]> requestBitFields;
-    FlagObservable flag = new FlagObservable(true);
+    private FlagObservable flag;
 
-    public Server(int port, HashMap<String, byte[]> requestBitFields, HashMap<String, BitField> bitFields, HashMap<String, byte[]> files, int PieceSize) {
+
+    public Server(int port, HashMap<String, byte[]> requestBitFields, HashMap<String, BitField> bitFields, HashMap<String, byte[]> files, int PieceSize, FlagObservable flag) {
 
         this.requestBitFields = requestBitFields;
         this.bitFields = bitFields;
         this.files = files;
         this.PieceSize = PieceSize;
+        this.flag = flag;
         new Handler(port).start();
     }
 

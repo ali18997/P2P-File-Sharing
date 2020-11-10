@@ -12,14 +12,15 @@ public class Peer {
     private HashMap<String, BitField> bitFields = new HashMap<String, BitField>();
     private HashMap<String, byte[]> files = new HashMap<String, byte[]>();
     private int PieceSize = 3;
+    FlagObservable flag = new FlagObservable(true);
 
     public Peer(int port) throws IOException {
         peerPort = port;
-        server = new Server(peerPort, requestBitFields, bitFields, files, PieceSize);
+        server = new Server(peerPort, requestBitFields, bitFields, files, PieceSize, flag);
     }
 
     public void connectToPeer(int port) throws IOException {
-        Client temp = new Client(port, peerPort, requestBitFields, bitFields, files, PieceSize);
+        Client temp = new Client(port, peerPort, requestBitFields, bitFields, files, PieceSize, flag);
         clients.put(port, temp);
         handShakePeer(port);
     }

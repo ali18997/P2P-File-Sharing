@@ -3,9 +3,7 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class Client {
     public Socket requestSocket;           //socket connect to the server
@@ -15,19 +13,24 @@ public class Client {
     public int serverPort;
     private Boolean requestFlag = false;
     private int PieceSize;
+    private FlagObservable flag;
 
     private HashMap<String, BitField> bitFields;
     private HashMap<String, byte[]> files;
     private HashMap<String, BitField> serverBitFields = new HashMap<String, BitField>();
     private HashMap<String, byte[]> requestBitFields;
+    private HashMap<String, byte[]> haveBitFields = new HashMap<String, byte[]>();
 
-    public Client(int port, int clientPort, HashMap<String, byte[]> requestBitFields, HashMap<String, BitField> bitFields, HashMap<String, byte[]> files, int PieceSize) throws IOException {
+    public Client(int port, int clientPort, HashMap<String, byte[]> requestBitFields, HashMap<String, BitField> bitFields, HashMap<String, byte[]> files, int PieceSize, FlagObservable flag) throws IOException {
         this.clientPort = clientPort;
         this.serverPort = port;
         this.requestBitFields = requestBitFields;
         this.bitFields = bitFields;
         this.files = files;
         this.PieceSize = PieceSize;
+        this.flag = flag;
+        FlagObserver observer = new FlagObserver();
+        flag.addObserver(observer);
         requestSocket = new Socket("localhost", port);
         System.out.println("Connected to localhost in port " + port);
         out = new ObjectOutputStream(requestSocket.getOutputStream());
@@ -35,6 +38,66 @@ public class Client {
         in = new ObjectInputStream(requestSocket.getInputStream());
         prepareBitFields();
         new MessageReceiving().start();
+    }
+
+    private void sendHave(int i, BitField bitFieldClient) {
+
+        byte[] pieceIndex = ByteBuffer.allocate(4).putInt(i).array();
+        Have haveMsg = new Have(bitFieldClient.FileName, pieceIndex, new BitField(bitFieldClient.FileName, bitFieldClient.FileSize, bitFieldClient.PieceSize, new byte[bitFieldClient.getBitField().length]));
+        for (int j = 0; j < haveMsg.getBitField().bitField.length; j++) {
+            haveMsg.getBitField().bitField[j] = 0;
+        }
+        try {
+            PayloadMessage pieceHave = new PayloadMessage(MessageConversion.messageToBytes(haveMsg));
+            ActualMessage haveMessage = new ActualMessage(1, 4, pieceHave);
+            System.out.println("Sending have for " +i + " peer " + serverPort);
+            sendMessage(MessageConversion.messageToBytes(haveMessage));
+            haveBitFields.get(bitFieldClient.FileName)[i] = 1;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public class FlagObserver implements Observer {
+
+        public FlagObserver() {}
+
+        public void update(Observable obj, Object arg) {
+
+            for (Map.Entry mapElement : bitFields.entrySet()) {
+                String name = (String) mapElement.getKey();
+                BitField bitFieldClient = ((BitField) mapElement.getValue());
+
+                if (serverBitFields.containsKey(name)) {
+                    BitField bitFieldServer = serverBitFields.get(name);
+                    int length = bitFieldServer.bitField.length;
+                    for (int i = 0; i < length; i++) {
+                        if (bitFieldServer.bitField[i] == 0 && bitFieldClient.bitField[i] == 1 && haveBitFields.get(name)[i] == 0) {
+                            sendHave(i, bitFieldClient);
+                        }
+                    }
+                }
+                else {
+                    BitField temp = new BitField(name, bitFieldClient.getFileSize(), bitFieldClient.getPieceSize(), new byte[bitFieldClient.getBitField().length]);
+                    byte[] temp2 = new byte[bitFieldClient.getBitField().length];
+                    for (int i = 0; i < temp.getBitField().length; i++) {
+                        temp.getBitField()[i] = 0;
+                        temp2[i] = 0;
+                    }
+                    serverBitFields.put(name, temp);
+                    haveBitFields.put(name, temp2);
+                    BitField bitFieldServer = serverBitFields.get(name);
+                    int length = bitFieldServer.bitField.length;
+                    for (int i = 0; i < length; i++) {
+                        if (bitFieldServer.bitField[i] == 0 && bitFieldClient.bitField[i] == 1 && haveBitFields.get(name)[i] == 0) {
+                            sendHave(i, bitFieldClient);
+                        }
+                    }
+                }
+            }
+
+        }
     }
 
     public void readActualFile(String name) throws IOException {
@@ -248,6 +311,12 @@ public class Client {
                                     ActualMessage interestMessage = new ActualMessage(1, 7, new PayloadMessage(MessageConversion.messageToBytes(pieceMsg)));
                                     sendMessage(MessageConversion.messageToBytes(interestMessage));
                                 }
+                                if(serverBitFields.containsKey(name)){
+                                    serverBitFields.get(name).bitField[pieceNum] = 1;
+                                }
+                                else {
+                                    System.out.println("ERROR");
+                                }
 
                             }
                             else if (actualMessage.getMessageType() == 7) {
@@ -266,6 +335,7 @@ public class Client {
                                     }
                                 }
                                 bitFields.get(fname).getBitField()[pieceNum] = 1;
+                                flag.setFlag(!flag.getFlag());
 
                                 if (pieceNum == bitFields.get(fname).getBitField().length-1) {
                                     System.out.println("Peer " + clientPort + " received complete file " + fname + " from "  + serverPort);

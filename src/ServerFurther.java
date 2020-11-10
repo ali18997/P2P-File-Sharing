@@ -238,6 +238,20 @@ public class ServerFurther {
                             }
                             else if (actualMessage.getMessageType() == 4) {
                                 //HAVE
+                                Have msg = (Have) MessageConversion.bytesToMessage(actualMessage.getPayload().getMessage());
+                                String name = msg.getFileName();
+
+                                int pieceNum = ByteBuffer.wrap(msg.getPieceIndex()).getInt();
+
+                                if (!clientBitFields.containsKey(name)){
+                                    clientBitFields.put(name, msg.getBitField());
+                                }
+
+                                clientBitFields.get(name).getBitField()[pieceNum] = 1;
+
+                                System.out.println("Peer " + serverPort + " received Have Message from " + clientPort + " for file: " + name + " piece: " + pieceNum);
+
+                                requestPiece();
                             }
                             else if (actualMessage.getMessageType() == 5) {
                                 System.out.println("Peer " + serverPort + " received Bitfield Message from " + clientPort);
@@ -302,6 +316,9 @@ public class ServerFurther {
                                     sendMessage(MessageConversion.messageToBytes(interestMessage));
                                     if(clientBitFields.containsKey(name)){
                                         clientBitFields.get(name).bitField[pieceNum] = 1;
+                                    }
+                                    else {
+                                        System.out.println("ERROR");
                                     }
                                 }
                             }
