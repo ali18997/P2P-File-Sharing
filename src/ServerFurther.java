@@ -56,11 +56,10 @@ public class ServerFurther {
             try {
                 PayloadMessage pieceHave = new PayloadMessage(MessageConversion.messageToBytes(haveMsg));
                 ActualMessage haveMessage = new ActualMessage(1, 4, pieceHave);
-                System.out.println("Sending have for " +i + " peer " + clientPort);
                 sendMessage(MessageConversion.messageToBytes(haveMessage));
                 haveBitFields.get(bitFieldServer.FileName)[i] = 1;
             } catch (IOException e) {
-                e.printStackTrace();
+                System.out.println("Server Error 1 " + e.toString());
             }
 
         }
@@ -79,8 +78,10 @@ public class ServerFurther {
                         BitField bitFieldClient = clientBitFields.get(name);
                         int length = bitFieldClient.bitField.length;
                         for (int i = 0; i < length; i++) {
-                            if (bitFieldClient.bitField[i] == 0 && bitFieldServer.bitField[i] == 1 && haveBitFields.get(name)[i] == 0) {
-                                sendHave(i, bitFieldServer);
+                            if (haveBitFields.containsKey(name)) {
+                                if (bitFieldClient.bitField[i] == 0 && bitFieldServer.bitField[i] == 1 && haveBitFields.get(name)[i] == 0) {
+                                    sendHave(i, bitFieldServer);
+                                }
                             }
                         }
                     }
@@ -359,7 +360,7 @@ public class ServerFurther {
                     }
                 }
                 catch(ClassNotFoundException classnot){
-                    System.err.println("Data received in unknown format");
+                    System.out.println("Server Error 2 " + classnot.toString());
                 }
             }
             catch(IOException ioException){
@@ -387,7 +388,7 @@ public class ServerFurther {
                 //System.out.println("Send message: " + msg + " to Client " + no);
             }
             catch(IOException ioException){
-                ioException.printStackTrace();
+                System.out.println("Server Error 3 " + ioException.toString());
             }
         }
 

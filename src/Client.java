@@ -50,11 +50,10 @@ public class Client {
         try {
             PayloadMessage pieceHave = new PayloadMessage(MessageConversion.messageToBytes(haveMsg));
             ActualMessage haveMessage = new ActualMessage(1, 4, pieceHave);
-            System.out.println("Sending have for " +i + " peer " + serverPort);
             sendMessage(MessageConversion.messageToBytes(haveMessage));
             haveBitFields.get(bitFieldClient.FileName)[i] = 1;
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Client Error 1 " + e.toString());
         }
 
     }
@@ -73,8 +72,10 @@ public class Client {
                     BitField bitFieldServer = serverBitFields.get(name);
                     int length = bitFieldServer.bitField.length;
                     for (int i = 0; i < length; i++) {
-                        if (bitFieldServer.bitField[i] == 0 && bitFieldClient.bitField[i] == 1 && haveBitFields.get(name)[i] == 0) {
-                            sendHave(i, bitFieldClient);
+                        if (haveBitFields.containsKey(name)) {
+                            if (bitFieldServer.bitField[i] == 0 && bitFieldClient.bitField[i] == 1 && haveBitFields.get(name)[i] == 0) {
+                                sendHave(i, bitFieldClient);
+                            }
                         }
                     }
                 }
@@ -191,21 +192,40 @@ public class Client {
 
     public class MessageReceiving extends Thread {
         public void run() {
-            try {
-                try {
+
                     while (true) {
-                        Object receivedMsg = MessageConversion.bytesToMessage((byte[]) in.readObject());
+                        Object receivedMsg = null;
+                        try {
+                            receivedMsg = MessageConversion.bytesToMessage((byte[]) in.readObject());
+                        } catch (IOException e) {
+                            System.out.println("Client Error 2 " + e.toString());
+                        } catch (ClassNotFoundException e) {
+                            System.out.println("Client Error 3 " + e.toString());
+                        }
                         if (receivedMsg instanceof HandshakeMessage) {
                             HandshakeMessage handshakeMessage = (HandshakeMessage) receivedMsg;
                             if (handshakeMessage.getHeader().equals("P2PFILESHARINGPROJ")) {
                                 System.out.println("Peer " + clientPort + " received Successful Handshake from " + handshakeMessage.getPeerID());
                                 HandshakeMessage handshakeMessageBack = new HandshakeMessage(clientPort);
-                                sendMessage(MessageConversion.messageToBytes(handshakeMessageBack));
+                                try {
+                                    sendMessage(MessageConversion.messageToBytes(handshakeMessageBack));
+                                } catch (IOException e) {
+                                    System.out.println("Client Error 4 " + e.toString());
+                                }
                                 for (Map.Entry mapElement : bitFields.entrySet()) {
                                     String name = (String)mapElement.getKey();
                                     BitField bitField = ((BitField)mapElement.getValue());
-                                    ActualMessage bitFieldMessage = new ActualMessage(1, 5, new PayloadMessage(MessageConversion.messageToBytes(bitField)));
-                                    sendMessage(MessageConversion.messageToBytes(bitFieldMessage));
+                                    ActualMessage bitFieldMessage = null;
+                                    try {
+                                        bitFieldMessage = new ActualMessage(1, 5, new PayloadMessage(MessageConversion.messageToBytes(bitField)));
+                                    } catch (IOException e) {
+                                        System.out.println("Client Error 41 " + e.toString());
+                                    }
+                                    try {
+                                        sendMessage(MessageConversion.messageToBytes(bitFieldMessage));
+                                    } catch (IOException e) {
+                                        System.out.println("Client Error 5 " + e.toString());
+                                    }
                                 }
 
                             }
@@ -218,7 +238,11 @@ public class Client {
                             else if (actualMessage.getMessageType() == 1) {
                                 //UNCHOKE
                                 System.out.println("Peer " + clientPort + " received UnChoke Message from " + serverPort);
-                                requestPiece();
+                                try {
+                                    requestPiece();
+                                } catch (IOException e) {
+                                    System.out.println("Client Error 6 " + e.toString());
+                                }
                             }
                             else if (actualMessage.getMessageType() == 2) {
                                 //Interested
@@ -226,14 +250,25 @@ public class Client {
                                 System.out.println("Peer " + clientPort + " received interested Message from " + serverPort);
 
                                 ActualMessage unchokeMessage = new ActualMessage(1, 1, null);
-                                sendMessage(MessageConversion.messageToBytes(unchokeMessage));
+                                try {
+                                    sendMessage(MessageConversion.messageToBytes(unchokeMessage));
+                                } catch (IOException e) {
+                                    System.out.println("Client Error 7 " + e.toString());
+                                }
                             }
                             else if (actualMessage.getMessageType() == 3) {
                                 System.out.println("Peer " + clientPort + " received not interested Message from " + serverPort);
                             }
                             else if (actualMessage.getMessageType() == 4) {
                                 //HAVE
-                                Have msg = (Have) MessageConversion.bytesToMessage(actualMessage.getPayload().getMessage());
+                                Have msg = null;
+                                try {
+                                    msg = (Have) MessageConversion.bytesToMessage(actualMessage.getPayload().getMessage());
+                                } catch (IOException e) {
+                                    System.out.println("Client Error 8 " + e.toString());
+                                } catch (ClassNotFoundException e) {
+                                    System.out.println("Client Error 9 " + e.toString());
+                                }
                                 String name = msg.getFileName();
 
                                 int pieceNum = ByteBuffer.wrap(msg.getPieceIndex()).getInt();
@@ -246,12 +281,23 @@ public class Client {
 
                                 System.out.println("Peer " + clientPort + " received Have Message from " + serverPort + " for file: " + name + " piece: " + pieceNum);
 
-                                requestPiece();
+                                try {
+                                    requestPiece();
+                                } catch (IOException e) {
+                                    System.out.println("Client Error 10 " + e.toString());
+                                }
                             }
                             else if (actualMessage.getMessageType() == 5) {
                                 System.out.println("Peer " + clientPort + " received Bitfield Message from " + serverPort);
 
-                                BitField bitField = (BitField)MessageConversion.bytesToMessage(actualMessage.getPayload().getMessage());
+                                BitField bitField = null;
+                                try {
+                                    bitField = (BitField)MessageConversion.bytesToMessage(actualMessage.getPayload().getMessage());
+                                } catch (IOException e) {
+                                    System.out.println("Client Error 11 " + e.toString());
+                                } catch (ClassNotFoundException e) {
+                                    System.out.println("Client Error 12 " + e.toString());
+                                }
 
                                 serverBitFields.put(bitField.getFileName(), bitField);
 
@@ -269,14 +315,22 @@ public class Client {
                                             for (int i = 0; i < length; i++) {
                                                 if (bitFieldClient.bitField[i] == 0 && bitFieldServer.bitField[i] == 1 && requestBitFields.get(name)[i] == 0) {
                                                     ActualMessage interestMessage = new ActualMessage(1, 2, null);
-                                                    sendMessage(MessageConversion.messageToBytes(interestMessage));
+                                                    try {
+                                                        sendMessage(MessageConversion.messageToBytes(interestMessage));
+                                                    } catch (IOException e) {
+                                                        System.out.println("Client Error 13 " + e.toString());
+                                                    }
                                                     flag = false;
                                                     break outerloop;
                                                 }
                                             }
                                         } else {
                                             ActualMessage interestMessage = new ActualMessage(1, 2, null);
-                                            sendMessage(MessageConversion.messageToBytes(interestMessage));
+                                            try {
+                                                sendMessage(MessageConversion.messageToBytes(interestMessage));
+                                            } catch (IOException e) {
+                                                System.out.println("Client Error 14 " + e.toString());
+                                            }
                                             flag = false;
                                             prepareToReceiveFile(bitFieldServer);
                                             break outerloop;
@@ -284,7 +338,11 @@ public class Client {
                                     }
                                     if (flag) {
                                         ActualMessage notInterestMessage = new ActualMessage(1, 3, null);
-                                        sendMessage(MessageConversion.messageToBytes(notInterestMessage));
+                                        try {
+                                            sendMessage(MessageConversion.messageToBytes(notInterestMessage));
+                                        } catch (IOException e) {
+                                            System.out.println("Client Error 15 " + e.toString());
+                                        }
                                         requestFlag = false;
                                     }
                                 }
@@ -293,12 +351,23 @@ public class Client {
                             else if (actualMessage.getMessageType() == 6) {
                                 //REQUEST
 
-                                Request msg = (Request) MessageConversion.bytesToMessage(actualMessage.getPayload().getMessage());
+                                Request msg = null;
+                                try {
+                                    msg = (Request) MessageConversion.bytesToMessage(actualMessage.getPayload().getMessage());
+                                } catch (IOException e) {
+                                    System.out.println("Client Error 16 " + e.toString());
+                                } catch (ClassNotFoundException e) {
+                                    System.out.println("Client Error 17 " + e.toString());
+                                }
                                 String name = msg.getFileName();
 
 
                                 if(!files.containsKey(name)){
-                                    readActualFile(name);
+                                    try {
+                                        readActualFile(name);
+                                    } catch (IOException e) {
+                                        System.out.println("Client Error 18 " + e.toString());
+                                    }
                                 }
 
                                 int pieceNum = ByteBuffer.wrap(msg.getPieceIndex()).getInt();
@@ -308,8 +377,17 @@ public class Client {
                                 if (bitFields.get(name).bitField[pieceNum] == 1) {
                                     byte[] piece = Arrays.copyOfRange(files.get(name), pieceNum*bitFields.get(name).PieceSize, pieceNum*bitFields.get(name).PieceSize + bitFields.get(name).PieceSize);
                                     Piece pieceMsg = new Piece(name, msg.getPieceIndex() ,piece);
-                                    ActualMessage interestMessage = new ActualMessage(1, 7, new PayloadMessage(MessageConversion.messageToBytes(pieceMsg)));
-                                    sendMessage(MessageConversion.messageToBytes(interestMessage));
+                                    ActualMessage interestMessage = null;
+                                    try {
+                                        interestMessage = new ActualMessage(1, 7, new PayloadMessage(MessageConversion.messageToBytes(pieceMsg)));
+                                    } catch (IOException e) {
+                                        System.out.println("Client Error 19 " + e.toString());
+                                    }
+                                    try {
+                                        sendMessage(MessageConversion.messageToBytes(interestMessage));
+                                    } catch (IOException e) {
+                                        System.out.println("Client Error 20 " + e.toString());
+                                    }
 
                                     if(!serverBitFields.containsKey(name)){
                                         BitField temp = bitFields.get(name);
@@ -327,7 +405,14 @@ public class Client {
                             else if (actualMessage.getMessageType() == 7) {
                                 //PIECE
 
-                                Piece a = (Piece) MessageConversion.bytesToMessage(actualMessage.getPayload().getMessage());
+                                Piece a = null;
+                                try {
+                                    a = (Piece) MessageConversion.bytesToMessage(actualMessage.getPayload().getMessage());
+                                } catch (IOException e) {
+                                    System.out.println("Client Error 21 " + e.toString());
+                                } catch (ClassNotFoundException e) {
+                                    System.out.println("Client Error 22 " + e.toString());
+                                }
                                 int pieceNum = ByteBuffer.wrap(a.getPieceIndex()).getInt();
                                 String fname = a.getName();
                                 System.out.println("Peer " + clientPort + " received Piece: " + pieceNum + " of File: " + fname + " from "  + serverPort);
@@ -345,20 +430,22 @@ public class Client {
                                 if (pieceNum == bitFields.get(fname).getBitField().length-1) {
                                     System.out.println("Peer " + clientPort + " received complete file " + fname + " from "  + serverPort);
 
-                                    Files.write(Path.of(System.getProperty("user.dir") + "/peerFolder/" + clientPort + "/" + fname), files.get(fname));
+                                    try {
+                                        Files.write(Path.of(System.getProperty("user.dir") + "/peerFolder/" + clientPort + "/" + fname), files.get(fname));
+                                    } catch (IOException e) {
+                                        System.out.println("Client Error 23 " + e.toString());
+                                    }
 
                                     //files.remove(fname);
                                 }
-                                requestPiece();
+                                try {
+                                    requestPiece();
+                                } catch (IOException e) {
+                                    System.out.println("Client Error 24 " + e.toString());
+                                }
                             }
                         }
                     }
-                } catch (ClassNotFoundException classnot) {
-                    System.err.println("Data received in unknown format");
-                }
-            } catch (IOException ioException) {
-                System.out.println("Disconnect with Peer " + ioException);
-            }
         }
     }
 
