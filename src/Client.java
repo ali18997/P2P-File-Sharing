@@ -198,7 +198,7 @@ public class Client {
                         try {
                             receivedMsg = MessageConversion.bytesToMessage((byte[]) in.readObject());
                         } catch (IOException e) {
-                            System.out.println("Client Error 2 " + e.toString());
+                            System.out.println("Client Error 2 " + e.toString() + " " + receivedMsg);
                         } catch (ClassNotFoundException e) {
                             System.out.println("Client Error 3 " + e.toString());
                         }

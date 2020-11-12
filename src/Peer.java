@@ -11,7 +11,7 @@ public class Peer {
     private HashMap<String, byte[]> requestBitFields = new HashMap<String, byte[]>();
     private HashMap<String, BitField> bitFields = new HashMap<String, BitField>();
     private HashMap<String, byte[]> files = new HashMap<String, byte[]>();
-    private int PieceSize = 3;
+    private int PieceSize = 5;
     FlagObservable flag = new FlagObservable(true);
 
     public Peer(int port) throws IOException {
