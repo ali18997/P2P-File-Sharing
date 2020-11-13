@@ -18,7 +18,7 @@ public class Peer {
     private HashMap<Integer, Boolean> interestedPeers = new HashMap<Integer, Boolean>();
 
 
-    private int PieceSize = 5;
+    private int PieceSize = 1000000;
     private int k = 2;
     private int p = 5;
     private int m = 3;
@@ -80,20 +80,22 @@ public class Peer {
                 connectedPeersRates.replace(highest, -1);
             }
             for (Map.Entry mapElement : connectedPeersRates.entrySet()) {
-                Integer peerPort = (Integer) mapElement.getKey();
-                connectedPeersRates.replace(peerPort, 0);
+                Integer peerID = (Integer) mapElement.getKey();
+                connectedPeersRates.replace(peerID, 0);
             }
 
             for (Map.Entry mapElement : interestedPeers.entrySet()) {
-                Integer peerPort = (Integer) mapElement.getKey();
-                interestedPeers.replace(peerPort, false);
+                Integer peerID = (Integer) mapElement.getKey();
+                interestedPeers.replace(peerID, false);
             }
 
-
+            System.out.print("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] has the preferred neighbors [");
             for (Map.Entry mapElement : topInterested.entrySet()) {
-                Integer peerPort = (Integer) mapElement.getKey();
-                interestedPeers.replace(peerPort, true);
+                Integer peerID = (Integer) mapElement.getKey();
+                interestedPeers.replace(peerID, true);
+                System.out.print(peerID + ",");
             }
+            System.out.println("]");
 
             flag2.setFlag(!flag2.getFlag());
 
@@ -104,15 +106,16 @@ public class Peer {
         public void run() {
             List<Integer> chokedInterested = new ArrayList<>();
             for (Map.Entry mapElement : interestedPeers.entrySet()) {
-                Integer peerPort = (Integer) mapElement.getKey();
-                if(interestedPeers.get(peerPort) == false){
-                    chokedInterested.add(peerPort);
+                Integer peerID = (Integer) mapElement.getKey();
+                if(interestedPeers.get(peerID) == false){
+                    chokedInterested.add(peerID);
                 }
             }
             Random rand = new Random();
             if(!chokedInterested.isEmpty()) {
                 int randomPeer = chokedInterested.get(rand.nextInt(chokedInterested.size()));
                 interestedPeers.replace(randomPeer, true);
+                System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] has  the  optimistically  unchoked  neighbor [" + randomPeer + "]");
             }
             flag2.setFlag(!flag2.getFlag());
         }

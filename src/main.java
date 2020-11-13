@@ -7,10 +7,10 @@ public class main {
         Peer d = new Peer(1004,8000);
         Peer e = new Peer(1005,9000);
 
-        a.connectToPeer(1004, "localhost", 8000);
-        b.connectToPeer(1003, "localhost", 7000);
-        d.connectToPeer(1003, "localhost", 7000);
-        d.connectToPeer(1005, "localhost", 9000);
+        a.connectToPeer(1004, "192.168.1.131", 8000);
+        //b.connectToPeer(1003, "localhost", 7000);
+        //d.connectToPeer(1003, "localhost", 7000);
+        //d.connectToPeer(1005, "localhost", 9000);
 
 
 

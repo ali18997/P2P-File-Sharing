@@ -239,16 +239,13 @@ public class ServerFurther {
                             HandshakeMessage handshakeMessage = (HandshakeMessage) receivedMsg;
                             otherPeerID = handshakeMessage.getPeerID();
                             if (handshakeMessage.getHeader().equals("P2PFILESHARINGPROJ") && handshakes.get(otherPeerID) == null) {
-                                System.out.println("Peer " + peerID + " received Successful Handshake from " + otherPeerID);
                                 HandshakeMessage handshakeMessageBack = new HandshakeMessage(peerID);
                                 handshakes.put(otherPeerID, true);
                                 sendMessage(MessageConversion.messageToBytes(handshakeMessageBack));
                             }
                             else if (handshakeMessage.getHeader().equals("P2PFILESHARINGPROJ") && handshakes.get(otherPeerID) == true) {
-                                System.out.println("Peer " + peerID + " Completed Handshake from " + otherPeerID);
+                                System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] is connected from Peer [" + otherPeerID + "]");
                                 connectedPeersRates.put(otherPeerID, 0);
-
-                                //LATER ON IMPLEMENT ONLY SENDING IF THERE ARE PIECES
 
                                 for (Map.Entry mapElement : bitFields.entrySet()) {
                                     String name = (String)mapElement.getKey();
@@ -262,28 +259,24 @@ public class ServerFurther {
                             ActualMessage actualMessage = (ActualMessage) receivedMsg;
                             if (actualMessage.getMessageType() == 0) {
                                 //CHOKE
-                                System.out.println("Peer " + peerID + " received Choke Message from " + otherPeerID);
+                                System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] is choked by [" + otherPeerID + "]");
                                 requestFromClient = false;
 
                             }
                             else if (actualMessage.getMessageType() == 1) {
                                 //UNCHOKE
-                                System.out.println("Peer " + peerID + " received UnChoke Message from " + otherPeerID);
+                                System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] is unchoked by [" + otherPeerID + "]");
                                 requestFromClient = true;
                                 requestPiece();
                             }
                             else if (actualMessage.getMessageType() == 2) {
-                                System.out.println("Peer " + peerID + " received interested Message from " + otherPeerID);
-                                //Interested
-                                //IMPLEMENT CHOKING AND UNCHOKING LATER ON
+                                System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] received the \"interested\" message from [" + otherPeerID + "]");
 
                                 interestedPeers.put(otherPeerID, false);
 
-                                //ActualMessage unchokeMessage = new ActualMessage(1, 1, null);
-                                //sendMessage(MessageConversion.messageToBytes(unchokeMessage));
                             }
                             else if (actualMessage.getMessageType() == 3) {
-                                System.out.println("Peer " + peerID + " received not interested Message from " + otherPeerID);
+                                System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] received the \"not interested\" message from [" + otherPeerID + "]");
                             }
                             else if (actualMessage.getMessageType() == 4) {
                                 //HAVE
@@ -298,8 +291,7 @@ public class ServerFurther {
 
                                 clientBitFields.get(name).getBitField()[pieceNum] = 1;
 
-
-                                System.out.println("Peer " + peerID + " received Have Message from " + otherPeerID + " for file: " + name + " piece: " + pieceNum);
+                                System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] received the \"have\" message from [" + otherPeerID + "] for the piece [" + pieceNum + "]");
                                 if(requestFromClient) {
                                     requestPiece();
                                 }
@@ -317,7 +309,7 @@ public class ServerFurther {
                                 }
                             }
                             else if (actualMessage.getMessageType() == 5) {
-                                System.out.println("Peer " + peerID + " received Bitfield Message from " + otherPeerID);
+                                //System.out.println("Peer " + peerID + " received Bitfield Message from " + otherPeerID);
 
                                 BitField bitField = (BitField)MessageConversion.bytesToMessage(actualMessage.getPayload().getMessage());
 
@@ -370,7 +362,7 @@ public class ServerFurther {
 
                                 int pieceNum = ByteBuffer.wrap(msg.getPieceIndex()).getInt();
 
-                                System.out.println("Peer " + peerID + " received Request Message from " + otherPeerID + " for file: " + name + " piece: " + pieceNum);
+                                //System.out.println("Peer " + peerID + " received Request Message from " + otherPeerID + " for file: " + name + " piece: " + pieceNum);
                                 if(sendToClient) {
                                     if (bitFields.get(name).bitField[pieceNum] == 1) {
                                         byte[] piece = Arrays.copyOfRange(files.get(name), pieceNum * bitFields.get(name).PieceSize, pieceNum * bitFields.get(name).PieceSize + bitFields.get(name).PieceSize);
@@ -401,7 +393,13 @@ public class ServerFurther {
                                 Piece a = (Piece) MessageConversion.bytesToMessage(actualMessage.getPayload().getMessage());
                                 int pieceNum = ByteBuffer.wrap(a.getPieceIndex()).getInt();
                                 String fname = a.getName();
-                                System.out.println("Peer " + peerID + " received Piece: " + pieceNum + " of File: " + fname + " from "  + otherPeerID);
+                                int count = 0;
+                                for (int i = 0; i < bitFields.get(fname).getBitField().length; i++){
+                                    if(bitFields.get(fname).getBitField()[i] == 1) {
+                                        count = count + 1;
+                                    }
+                                }
+                                System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] has downloaded the piece [" + pieceNum + "] from [" + otherPeerID + "]. Now the number of pieces it has is [" + (count + 1) + "]");
 
 
                                 byte[] piece = a.getPiece();
@@ -425,7 +423,7 @@ public class ServerFurther {
                                     }
                                 }
                                 if(tempFlag) {
-                                    System.out.println("Peer " + peerID + " received complete file " + fname + " from " + otherPeerID);
+                                    System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] has downloaded the complete file.");
 
 
                                     Files.write(Path.of(System.getProperty("user.dir") + "/peerFolder/" + peerID + "/" + fname), files.get(fname));
