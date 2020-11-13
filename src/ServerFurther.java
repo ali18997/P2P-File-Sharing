@@ -24,6 +24,7 @@ public class ServerFurther {
         private Boolean requestFlag = false;
         private int PieceSize;
         private FlagObservable flag;
+        private FlagObservable flag2;
 
         private HashMap<String, BitField> bitFields;
         private HashMap<String, byte[]> files;
@@ -31,8 +32,12 @@ public class ServerFurther {
         private HashMap<String, byte[]> requestBitFields;
         private HashMap<Integer, Boolean> handshakes = new HashMap<Integer, Boolean>();
         private HashMap<String, byte[]> haveBitFields = new HashMap<String, byte[]>();
+        private HashMap<Integer, Integer> connectedPeersRates;
+        private HashMap<Integer, Boolean> interestedPeers;
+        private Boolean sendToClient = false;
+        private Boolean requestFromClient = false;
 
-        public Handler(Socket connection, int no, int serverPort, HashMap<String, byte[]> requestBitFields, HashMap<String, BitField> bitFields, HashMap<String, byte[]> files, int PieceSize, FlagObservable flag) throws IOException {
+        public Handler(Socket connection, int no, int serverPort, HashMap<String, byte[]> requestBitFields, HashMap<String, BitField> bitFields, HashMap<String, byte[]> files, int PieceSize, FlagObservable flag, FlagObservable flag2, HashMap<Integer, Integer> connectedPeersRates, HashMap<Integer, Boolean> interestedPeers) throws IOException {
             this.connection = connection;
             this.no = no;
             this.serverPort = serverPort;
@@ -41,8 +46,14 @@ public class ServerFurther {
             this.files = files;
             this.PieceSize = PieceSize;
             this.flag = flag;
+            this.flag2 = flag2;
+            this.connectedPeersRates = connectedPeersRates;
+            this.interestedPeers = interestedPeers;
+
             FlagObserver observer = new FlagObserver();
+            FlagObserver2 observer2 = new FlagObserver2();
             flag.addObserver(observer);
+            flag2.addObserver(observer2);
             prepareBitFields();
         }
 
@@ -107,7 +118,35 @@ public class ServerFurther {
             }
         }
 
+        public class FlagObserver2 implements Observer {
 
+            public FlagObserver2() {
+            }
+
+            public void update(Observable obj, Object arg) {
+                if(interestedPeers.containsKey(clientPort)) {
+                    if (sendToClient == false && interestedPeers.get(clientPort) == true) {
+                        //UNCHOKE
+                        ActualMessage unchokeMessage = new ActualMessage(1, 1, null);
+                        try {
+                            sendToClient = true;
+                            sendMessage(MessageConversion.messageToBytes(unchokeMessage));
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    } else if (sendToClient == true && interestedPeers.get(clientPort) == false) {
+                        //CHOKE
+                        ActualMessage chokeMessage = new ActualMessage(1, 0, null);
+                        try {
+                            sendToClient = false;
+                            sendMessage(MessageConversion.messageToBytes(chokeMessage));
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        }
 
         public void readActualFile(String name) throws IOException {
             final File folder = new File(System.getProperty("user.dir") + "/peerFolder/" + serverPort);
@@ -150,36 +189,37 @@ public class ServerFurther {
         }
 
         public void requestPiece() throws IOException {
-            outerloop:
-            for (Map.Entry mapElement : clientBitFields.entrySet()) {
-                String name = (String)mapElement.getKey();
-                BitField bitFieldClient = ((BitField)mapElement.getValue());
+            if(requestFromClient) {
+                outerloop:
+                for (Map.Entry mapElement : clientBitFields.entrySet()) {
+                    String name = (String) mapElement.getKey();
+                    BitField bitFieldClient = ((BitField) mapElement.getValue());
 
-                if (bitFields.containsKey(name)){
-                    BitField bitFieldServer = bitFields.get(name);
-                    int length = bitFieldServer.bitField.length;
-                    for (int i = 0; i < length; i++) {
-                        if (bitFieldServer.bitField[i] == 0 &&  bitFieldClient.bitField[i] == 1 && requestBitFields.get(name)[i] == 0) {
-                            requestBitFields.get(name)[i] = 1;
-                            byte[] pieceIndex = ByteBuffer.allocate(4).putInt(i).array();
-                            Request request = new Request(name, pieceIndex);
-                            PayloadMessage pieceRequest = new PayloadMessage(MessageConversion.messageToBytes(request));
-                            ActualMessage requestMessage = new ActualMessage(1, 6, pieceRequest);
-                            sendMessage(MessageConversion.messageToBytes(requestMessage));
-                            break outerloop;
+                    if (bitFields.containsKey(name)) {
+                        BitField bitFieldServer = bitFields.get(name);
+                        int length = bitFieldServer.bitField.length;
+                        for (int i = 0; i < length; i++) {
+                            if (bitFieldServer.bitField[i] == 0 && bitFieldClient.bitField[i] == 1 && requestBitFields.get(name)[i] == 0) {
+                                requestBitFields.get(name)[i] = 1;
+                                byte[] pieceIndex = ByteBuffer.allocate(4).putInt(i).array();
+                                Request request = new Request(name, pieceIndex);
+                                PayloadMessage pieceRequest = new PayloadMessage(MessageConversion.messageToBytes(request));
+                                ActualMessage requestMessage = new ActualMessage(1, 6, pieceRequest);
+                                sendMessage(MessageConversion.messageToBytes(requestMessage));
+                                break outerloop;
+                            }
                         }
+                    } else {
+                        prepareToReceiveFile(bitFieldClient);
+
+                        byte[] pieceIndex = ByteBuffer.allocate(4).putInt(0).array();
+                        Request request = new Request(name, pieceIndex);
+                        PayloadMessage pieceRequest = new PayloadMessage(MessageConversion.messageToBytes(request));
+                        ActualMessage requestMessage = new ActualMessage(1, 6, pieceRequest);
+                        sendMessage(MessageConversion.messageToBytes(requestMessage));
+
+                        break outerloop;
                     }
-                }
-                else {
-                    prepareToReceiveFile(bitFieldClient);
-
-                    byte[] pieceIndex = ByteBuffer.allocate(4).putInt(0).array();
-                    Request request = new Request(name, pieceIndex);
-                    PayloadMessage pieceRequest = new PayloadMessage(MessageConversion.messageToBytes(request));
-                    ActualMessage requestMessage = new ActualMessage(1, 6, pieceRequest);
-                    sendMessage(MessageConversion.messageToBytes(requestMessage));
-
-                    break outerloop;
                 }
             }
         }
@@ -206,6 +246,7 @@ public class ServerFurther {
                             }
                             else if (handshakeMessage.getHeader().equals("P2PFILESHARINGPROJ") && handshakes.get(clientPort) == true) {
                                 System.out.println("Peer " + serverPort + " Completed Handshake from " + clientPort);
+                                connectedPeersRates.put(clientPort, 0);
 
                                 //LATER ON IMPLEMENT ONLY SENDING IF THERE ARE PIECES
 
@@ -221,18 +262,25 @@ public class ServerFurther {
                             ActualMessage actualMessage = (ActualMessage) receivedMsg;
                             if (actualMessage.getMessageType() == 0) {
                                 //CHOKE
+                                System.out.println("Peer " + serverPort + " received Choke Message from " + clientPort);
+                                requestFromClient = false;
+
                             }
                             else if (actualMessage.getMessageType() == 1) {
                                 //UNCHOKE
                                 System.out.println("Peer " + serverPort + " received UnChoke Message from " + clientPort);
+                                requestFromClient = true;
                                 requestPiece();
                             }
                             else if (actualMessage.getMessageType() == 2) {
                                 System.out.println("Peer " + serverPort + " received interested Message from " + clientPort);
                                 //Interested
                                 //IMPLEMENT CHOKING AND UNCHOKING LATER ON
-                                ActualMessage unchokeMessage = new ActualMessage(1, 1, null);
-                                sendMessage(MessageConversion.messageToBytes(unchokeMessage));
+
+                                interestedPeers.put(clientPort, false);
+
+                                //ActualMessage unchokeMessage = new ActualMessage(1, 1, null);
+                                //sendMessage(MessageConversion.messageToBytes(unchokeMessage));
                             }
                             else if (actualMessage.getMessageType() == 3) {
                                 System.out.println("Peer " + serverPort + " received not interested Message from " + clientPort);
@@ -250,9 +298,23 @@ public class ServerFurther {
 
                                 clientBitFields.get(name).getBitField()[pieceNum] = 1;
 
-                                System.out.println("Peer " + serverPort + " received Have Message from " + clientPort + " for file: " + name + " piece: " + pieceNum);
 
-                                requestPiece();
+                                System.out.println("Peer " + serverPort + " received Have Message from " + clientPort + " for file: " + name + " piece: " + pieceNum);
+                                if(requestFromClient) {
+                                    requestPiece();
+                                }
+                                else {
+                                    if(bitFields.containsKey(name)) {
+                                        if (bitFields.get(name).getBitField()[pieceNum] == 0) {
+                                            ActualMessage interestMessage = new ActualMessage(1, 2, null);
+                                            sendMessage(MessageConversion.messageToBytes(interestMessage));
+                                        }
+                                    }
+                                    else {
+                                        ActualMessage interestMessage = new ActualMessage(1, 2, null);
+                                        sendMessage(MessageConversion.messageToBytes(interestMessage));
+                                    }
+                                }
                             }
                             else if (actualMessage.getMessageType() == 5) {
                                 System.out.println("Peer " + serverPort + " received Bitfield Message from " + clientPort);
@@ -309,22 +371,28 @@ public class ServerFurther {
                                 int pieceNum = ByteBuffer.wrap(msg.getPieceIndex()).getInt();
 
                                 System.out.println("Peer " + serverPort + " received Request Message from " + clientPort + " for file: " + name + " piece: " + pieceNum);
+                                if(sendToClient) {
+                                    if (bitFields.get(name).bitField[pieceNum] == 1) {
+                                        byte[] piece = Arrays.copyOfRange(files.get(name), pieceNum * bitFields.get(name).PieceSize, pieceNum * bitFields.get(name).PieceSize + bitFields.get(name).PieceSize);
+                                        Piece pieceMsg = new Piece(name, msg.getPieceIndex(), piece);
+                                        ActualMessage interestMessage = new ActualMessage(1, 7, new PayloadMessage(MessageConversion.messageToBytes(pieceMsg)));
+                                        sendMessage(MessageConversion.messageToBytes(interestMessage));
 
-                                if (bitFields.get(name).bitField[pieceNum] == 1) {
-                                    byte[] piece = Arrays.copyOfRange(files.get(name), pieceNum*bitFields.get(name).PieceSize, pieceNum*bitFields.get(name).PieceSize + bitFields.get(name).PieceSize);
-                                    Piece pieceMsg = new Piece(name, msg.getPieceIndex() ,piece);
-                                    ActualMessage interestMessage = new ActualMessage(1, 7, new PayloadMessage(MessageConversion.messageToBytes(pieceMsg)));
-                                    sendMessage(MessageConversion.messageToBytes(interestMessage));
-
-                                    if(!clientBitFields.containsKey(name)){
-                                        BitField temp = bitFields.get(name);
-                                        BitField temp2 = new BitField(temp.FileName, temp.FileSize, temp.PieceSize, new byte[temp.getBitField().length]);
-                                        for (int i = 0; i < temp.getBitField().length; i++) {
-                                            temp2.getBitField()[i] = 0;
+                                        if (!clientBitFields.containsKey(name)) {
+                                            BitField temp = bitFields.get(name);
+                                            BitField temp2 = new BitField(temp.FileName, temp.FileSize, temp.PieceSize, new byte[temp.getBitField().length]);
+                                            for (int i = 0; i < temp.getBitField().length; i++) {
+                                                temp2.getBitField()[i] = 0;
+                                            }
+                                            clientBitFields.put(name, temp2);
                                         }
-                                        clientBitFields.put(name, temp2);
+                                        clientBitFields.get(name).bitField[pieceNum] = 1;
                                     }
-                                    clientBitFields.get(name).bitField[pieceNum] = 1;
+                                }
+                                else {
+                                    if(!interestedPeers.containsKey(clientPort)){
+                                        interestedPeers.put(clientPort, false);
+                                    }
                                 }
 
                             }
@@ -343,16 +411,25 @@ public class ServerFurther {
                                     }
                                 }
                                 bitFields.get(fname).getBitField()[pieceNum] = 1;
+                                connectedPeersRates.replace(clientPort, connectedPeersRates.get(clientPort) + bitFields.get(fname).getPieceSize());
 
                                 flag.setFlag(!flag.getFlag());
 
 
-                                if (pieceNum == bitFields.get(fname).getBitField().length-1) {
-                                    System.out.println("Peer " + serverPort + " received complete file " + fname + " from "  + clientPort);
+
+                                byte[] temp = bitFields.get(fname).getBitField();
+                                Boolean tempFlag = true;
+                                for (int i = 0; i < bitFields.get(fname).getBitField().length-1; i++){
+                                    if(temp[i] == 0){
+                                        tempFlag = false;
+                                    }
+                                }
+                                if(tempFlag) {
+                                    System.out.println("Peer " + serverPort + " received complete file " + fname + " from " + clientPort);
+
 
                                     Files.write(Path.of(System.getProperty("user.dir") + "/peerFolder/" + serverPort + "/" + fname), files.get(fname));
 
-                                    //files.remove(fname);
                                 }
                                 requestPiece();
                             }

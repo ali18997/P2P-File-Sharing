@@ -5,20 +5,31 @@ import java.util.HashMap;
 public class Server {
 
     private int PieceSize;
+    private int k;
+    private double p;
+    private double m;
 
     private HashMap<String, BitField> bitFields;
     private HashMap<String, byte[]> files;
     private HashMap<String, byte[]> requestBitFields;
     private FlagObservable flag;
+    private FlagObservable flag2;
+
+    private HashMap<Integer, Integer> connectedPeersRates;
+    private HashMap<Integer, Boolean> interestedPeers;
 
 
-    public Server(int port, HashMap<String, byte[]> requestBitFields, HashMap<String, BitField> bitFields, HashMap<String, byte[]> files, int PieceSize, FlagObservable flag) {
+    public Server(int port, HashMap<String, byte[]> requestBitFields, HashMap<String, BitField> bitFields, HashMap<String, byte[]> files, int PieceSize, FlagObservable flag, FlagObservable flag2, HashMap<Integer, Integer> connectedPeersRates, HashMap<Integer, Boolean> interestedPeers) {
 
         this.requestBitFields = requestBitFields;
         this.bitFields = bitFields;
         this.files = files;
         this.PieceSize = PieceSize;
         this.flag = flag;
+        this.flag2 = flag2;
+        this.connectedPeersRates = connectedPeersRates;
+        this.interestedPeers = interestedPeers;
+
         new Handler(port).start();
     }
 
@@ -41,7 +52,7 @@ public class Server {
             try {
                 while(true) {
                     try {
-                        new ServerFurther.Handler(listener.accept(),clientNum, sPort, requestBitFields, bitFields, files, PieceSize, flag).start();
+                        new ServerFurther.Handler(listener.accept(),clientNum, sPort, requestBitFields, bitFields, files, PieceSize, flag, flag2, connectedPeersRates, interestedPeers).start();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }

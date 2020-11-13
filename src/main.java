@@ -7,10 +7,10 @@ public class main {
         Peer d = new Peer(8000);
         Peer e = new Peer(9000);
 
-        b.connectToPeer(4000);
-        c.connectToPeer(5000);
+        a.connectToPeer(8000);
+        b.connectToPeer(7000);
         d.connectToPeer(7000);
-        e.connectToPeer(8000);
+        d.connectToPeer(9000);
 
 
 
