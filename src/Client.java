@@ -9,12 +9,16 @@ public class Client {
     public Socket requestSocket;           //socket connect to the server
     public ObjectOutputStream out;         //stream write to the socket
     public ObjectInputStream in;          //stream read from the socket
-    public int clientPort;
-    public int serverPort;
+    //public int clientPort;
+    //public int serverPort;
     private Boolean requestFlag = false;
     private int PieceSize;
     private FlagObservable flag;
     private FlagObservable flag2;
+    private int peerID;
+    private int otherPeerID;
+    private String otherPeerHostName;
+    private int otherPeerPort;
 
     private HashMap<String, BitField> bitFields;
     private HashMap<String, byte[]> files;
@@ -26,24 +30,26 @@ public class Client {
     private Boolean sendToServer = false;
     private Boolean requestFromServer = false;
 
-    public Client(int port, int clientPort, HashMap<String, byte[]> requestBitFields, HashMap<String, BitField> bitFields, HashMap<String, byte[]> files, int PieceSize, FlagObservable flag, FlagObservable flag2, HashMap<Integer, Integer> connectedPeersRates, HashMap<Integer, Boolean> interestedPeers) throws IOException {
-        this.clientPort = clientPort;
-        this.serverPort = port;
+    public Client(int otherPeerID, String otherPeerHostName, int otherPeerPort, int peerID, HashMap<String, byte[]> requestBitFields, HashMap<String, BitField> bitFields, HashMap<String, byte[]> files, int PieceSize, FlagObservable flag, FlagObservable flag2, HashMap<Integer, Integer> connectedPeersRates, HashMap<Integer, Boolean> interestedPeers) throws IOException {
         this.requestBitFields = requestBitFields;
         this.bitFields = bitFields;
         this.files = files;
         this.PieceSize = PieceSize;
         this.flag = flag;
         this.flag2 = flag2;
+        this.peerID = peerID;
+        this.otherPeerID = otherPeerID;
         this.connectedPeersRates = connectedPeersRates;
         this.interestedPeers = interestedPeers;
+        this.otherPeerHostName = otherPeerHostName;
+        this.otherPeerPort = otherPeerPort;
 
         FlagObserver observer = new FlagObserver();
         FlagObserver2 observer2 = new FlagObserver2();
         flag.addObserver(observer);
         flag2.addObserver(observer2);
-        requestSocket = new Socket("localhost", port);
-        System.out.println("Connected to localhost in port " + port);
+        requestSocket = new Socket(this.otherPeerHostName, otherPeerPort);
+        System.out.println("Peer " + this.peerID + " connected to Peer " + this.otherPeerID + " at " + this.otherPeerHostName + " in port " + this.otherPeerPort);
         out = new ObjectOutputStream(requestSocket.getOutputStream());
         out.flush();
         in = new ObjectInputStream(requestSocket.getInputStream());
@@ -118,8 +124,8 @@ public class Client {
         }
 
         public void update(Observable obj, Object arg) {
-            if(interestedPeers.containsKey(serverPort)) {
-                if (sendToServer == false && interestedPeers.get(serverPort) == true) {
+            if(interestedPeers.containsKey(otherPeerID)) {
+                if (sendToServer == false && interestedPeers.get(otherPeerID) == true) {
                     //UNCHOKE
                     ActualMessage unchokeMessage = new ActualMessage(1, 1, null);
                     try {
@@ -128,7 +134,7 @@ public class Client {
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                } else if (sendToServer == true && interestedPeers.get(serverPort) == false) {
+                } else if (sendToServer == true && interestedPeers.get(otherPeerID) == false) {
                     //CHOKE
                     ActualMessage chokeMessage = new ActualMessage(1, 0, null);
                     try {
@@ -143,7 +149,7 @@ public class Client {
     }
 
     public void readActualFile(String name) throws IOException {
-        final File folder = new File(System.getProperty("user.dir") + "/peerFolder/" + clientPort);
+        final File folder = new File(System.getProperty("user.dir") + "/peerFolder/" + peerID);
         for (final File fileEntry : folder.listFiles()) {
             if (name.equals(fileEntry.getName())) {
                 byte[] bytes = Files.readAllBytes(fileEntry.toPath());
@@ -153,7 +159,7 @@ public class Client {
     }
 
     public void prepareBitFields() throws IOException {
-        final File folder = new File(System.getProperty("user.dir") + "/peerFolder/" + clientPort);
+        final File folder = new File(System.getProperty("user.dir") + "/peerFolder/" + peerID);
         if (!folder.exists()){folder.mkdir();}
         for (final File fileEntry : folder.listFiles()) {
                 String fileName = fileEntry.getName();
@@ -248,11 +254,11 @@ public class Client {
                         if (receivedMsg instanceof HandshakeMessage) {
                             HandshakeMessage handshakeMessage = (HandshakeMessage) receivedMsg;
                             if (handshakeMessage.getHeader().equals("P2PFILESHARINGPROJ")) {
-                                System.out.println("Peer " + clientPort + " received Successful Handshake from " + handshakeMessage.getPeerID());
-                                HandshakeMessage handshakeMessageBack = new HandshakeMessage(clientPort);
+                                System.out.println("Peer " + peerID + " received Successful Handshake from " + handshakeMessage.getPeerID());
+                                HandshakeMessage handshakeMessageBack = new HandshakeMessage(peerID);
                                 try {
                                     sendMessage(MessageConversion.messageToBytes(handshakeMessageBack));
-                                    connectedPeersRates.put(serverPort, 0);
+                                    connectedPeersRates.put(otherPeerID, 0);
                                 } catch (IOException e) {
                                     System.out.println("Client Error 4 " + e.toString());
                                 }
@@ -278,12 +284,12 @@ public class Client {
                             ActualMessage actualMessage = (ActualMessage) receivedMsg;
                             if (actualMessage.getMessageType() == 0) {
                                 //CHOKE
-                                System.out.println("Peer " + clientPort + " received Choke Message from " + serverPort);
+                                System.out.println("Peer " + peerID + " received Choke Message from " + otherPeerID);
                                 requestFromServer = false;
                             }
                             else if (actualMessage.getMessageType() == 1) {
                                 //UNCHOKE
-                                System.out.println("Peer " + clientPort + " received UnChoke Message from " + serverPort);
+                                System.out.println("Peer " + peerID + " received UnChoke Message from " + otherPeerID);
                                 try {
                                     requestFromServer = true;
                                     requestPiece();
@@ -294,19 +300,13 @@ public class Client {
                             else if (actualMessage.getMessageType() == 2) {
                                 //Interested
                                 //IMPLEMENT CHOKING AND UNCHOKING LATER ON
-                                System.out.println("Peer " + clientPort + " received interested Message from " + serverPort);
+                                System.out.println("Peer " + peerID + " received interested Message from " + otherPeerID);
 
-                                interestedPeers.put(serverPort, false);
+                                interestedPeers.put(otherPeerID, false);
 
-                                //ActualMessage unchokeMessage = new ActualMessage(1, 1, null);
-                                //try {
-                                    //sendMessage(MessageConversion.messageToBytes(unchokeMessage));
-                                //} catch (IOException e) {
-                                    //System.out.println("Client Error 7 " + e.toString());
-                                //}
                             }
                             else if (actualMessage.getMessageType() == 3) {
-                                System.out.println("Peer " + clientPort + " received not interested Message from " + serverPort);
+                                System.out.println("Peer " + peerID + " received not interested Message from " + otherPeerID);
                             }
                             else if (actualMessage.getMessageType() == 4) {
                                 //HAVE
@@ -328,7 +328,7 @@ public class Client {
 
                                 serverBitFields.get(name).getBitField()[pieceNum] = 1;
 
-                                System.out.println("Peer " + clientPort + " received Have Message from " + serverPort + " for file: " + name + " piece: " + pieceNum);
+                                System.out.println("Peer " + peerID + " received Have Message from " + otherPeerID + " for file: " + name + " piece: " + pieceNum);
 
                                 if(requestFromServer) {
                                     try {
@@ -361,7 +361,7 @@ public class Client {
 
                             }
                             else if (actualMessage.getMessageType() == 5) {
-                                System.out.println("Peer " + clientPort + " received Bitfield Message from " + serverPort);
+                                System.out.println("Peer " + peerID + " received Bitfield Message from " + otherPeerID);
 
                                 BitField bitField = null;
                                 try {
@@ -445,7 +445,7 @@ public class Client {
 
                                 int pieceNum = ByteBuffer.wrap(msg.getPieceIndex()).getInt();
 
-                                System.out.println("Peer " + clientPort + " received Request Message from " + serverPort + " for file: " + name + " piece: " + pieceNum);
+                                System.out.println("Peer " + peerID + " received Request Message from " + otherPeerID + " for file: " + name + " piece: " + pieceNum);
                                 if(sendToServer) {
                                     if (bitFields.get(name).bitField[pieceNum] == 1) {
                                         byte[] piece = Arrays.copyOfRange(files.get(name), pieceNum * bitFields.get(name).PieceSize, pieceNum * bitFields.get(name).PieceSize + bitFields.get(name).PieceSize);
@@ -474,8 +474,8 @@ public class Client {
                                     }
                                 }
                                 else {
-                                    if(!interestedPeers.containsKey(serverPort)){
-                                        interestedPeers.put(serverPort, false);
+                                    if(!interestedPeers.containsKey(otherPeerID)){
+                                        interestedPeers.put(otherPeerID, false);
                                     }
                                 }
 
@@ -494,7 +494,7 @@ public class Client {
                                 }
                                 int pieceNum = ByteBuffer.wrap(a.getPieceIndex()).getInt();
                                 String fname = a.getName();
-                                System.out.println("Peer " + clientPort + " received Piece: " + pieceNum + " of File: " + fname + " from "  + serverPort);
+                                System.out.println("Peer " + peerID + " received Piece: " + pieceNum + " of File: " + fname + " from "  + otherPeerID);
 
 
                                 byte[] piece = a.getPiece();
@@ -504,7 +504,7 @@ public class Client {
                                     }
                                 }
                                 bitFields.get(fname).getBitField()[pieceNum] = 1;
-                                connectedPeersRates.replace(serverPort, connectedPeersRates.get(serverPort) + bitFields.get(fname).getPieceSize());
+                                connectedPeersRates.replace(otherPeerID, connectedPeersRates.get(otherPeerID) + bitFields.get(fname).getPieceSize());
 
                                 flag.setFlag(!flag.getFlag());
 
@@ -519,8 +519,8 @@ public class Client {
 
 
                                     try {
-                                        System.out.println("Peer " + clientPort + " received complete file " + fname + " from " + serverPort);
-                                        Files.write(Path.of(System.getProperty("user.dir") + "/peerFolder/" + clientPort + "/" + fname), files.get(fname));
+                                        System.out.println("Peer " + peerID + " received complete file " + fname + " from " + otherPeerID);
+                                        Files.write(Path.of(System.getProperty("user.dir") + "/peerFolder/" + peerID + "/" + fname), files.get(fname));
                                     } catch (IOException e) {
                                         System.out.println("Client Error 23 " + e.toString());
                                     }

@@ -4,10 +4,8 @@ import java.util.HashMap;
 
 public class Server {
 
+    private int peerID;
     private int PieceSize;
-    private int k;
-    private double p;
-    private double m;
 
     private HashMap<String, BitField> bitFields;
     private HashMap<String, byte[]> files;
@@ -19,8 +17,9 @@ public class Server {
     private HashMap<Integer, Boolean> interestedPeers;
 
 
-    public Server(int port, HashMap<String, byte[]> requestBitFields, HashMap<String, BitField> bitFields, HashMap<String, byte[]> files, int PieceSize, FlagObservable flag, FlagObservable flag2, HashMap<Integer, Integer> connectedPeersRates, HashMap<Integer, Boolean> interestedPeers) {
+    public Server(int peerID, int port, HashMap<String, byte[]> requestBitFields, HashMap<String, BitField> bitFields, HashMap<String, byte[]> files, int PieceSize, FlagObservable flag, FlagObservable flag2, HashMap<Integer, Integer> connectedPeersRates, HashMap<Integer, Boolean> interestedPeers) {
 
+        this.peerID = peerID;
         this.requestBitFields = requestBitFields;
         this.bitFields = bitFields;
         this.files = files;
@@ -52,7 +51,7 @@ public class Server {
             try {
                 while(true) {
                     try {
-                        new ServerFurther.Handler(listener.accept(),clientNum, sPort, requestBitFields, bitFields, files, PieceSize, flag, flag2, connectedPeersRates, interestedPeers).start();
+                        new ServerFurther.Handler(listener.accept(),clientNum, peerID, requestBitFields, bitFields, files, PieceSize, flag, flag2, connectedPeersRates, interestedPeers).start();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }

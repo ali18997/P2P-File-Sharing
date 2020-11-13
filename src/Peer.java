@@ -4,6 +4,9 @@ import java.util.*;
 
 
 public class Peer {
+
+    private int peerID;
+    private String hostName;
     private int peerPort;   //The server will be listening on this port number
     private Server server;
 
@@ -23,19 +26,19 @@ public class Peer {
     FlagObservable flag = new FlagObservable(true);
     FlagObservable flag2 = new FlagObservable(true);
 
-    public Peer(int port) throws IOException {
+    public Peer(int peerID, int port) throws IOException {
         peerPort = port;
-        server = new Server(peerPort, requestBitFields, bitFields, files, PieceSize, flag, flag2, connectedPeersRates, interestedPeers);
-        // And From your main() method or any other method
+        this.peerID = peerID;
+        server = new Server(this.peerID, peerPort, requestBitFields, bitFields, files, PieceSize, flag, flag2, connectedPeersRates, interestedPeers);
         Timer timer = new Timer();
         timer.schedule(new preferredNeighbours(), 0, p*1000);
         timer.schedule(new optimisticallyUnchokedNeighbor(), 0, m*1000);
     }
 
-    public void connectToPeer(int port) throws IOException {
-        Client temp = new Client(port, peerPort, requestBitFields, bitFields, files, PieceSize, flag, flag2, connectedPeersRates, interestedPeers);
-        clients.put(port, temp);
-        handShakePeer(port);
+    public void connectToPeer(int otherPeerID, String otherPeerHostName, int otherPeerPort) throws IOException {
+        Client temp = new Client(otherPeerID, otherPeerHostName, otherPeerPort, this.peerID, requestBitFields, bitFields, files, PieceSize, flag, flag2, connectedPeersRates, interestedPeers);
+        clients.put(otherPeerPort, temp);
+        handShakePeer(otherPeerPort);
     }
 
     public void handShakePeer(int port) throws IOException {
