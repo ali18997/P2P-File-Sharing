@@ -1,5 +1,6 @@
 
 import java.io.*;
+import java.nio.file.Files;
 import java.util.*;
 
 
@@ -18,10 +19,10 @@ public class Peer {
     private HashMap<Integer, Boolean> interestedPeers = new HashMap<Integer, Boolean>();
 
 
-    private int PieceSize = 1000000;
-    private int k = 2;
-    private int p = 5;
-    private int m = 3;
+    private int PieceSize;
+    private int k;
+    private int p;
+    private int m;
 
     FlagObservable flag = new FlagObservable(true);
     FlagObservable flag2 = new FlagObservable(true);
@@ -29,10 +30,40 @@ public class Peer {
     public Peer(int peerID, int port) throws IOException {
         peerPort = port;
         this.peerID = peerID;
+        readCommon();
+
+
         server = new Server(this.peerID, peerPort, requestBitFields, bitFields, files, PieceSize, flag, flag2, connectedPeersRates, interestedPeers);
         Timer timer = new Timer();
         timer.schedule(new preferredNeighbours(), 0, p*1000);
         timer.schedule(new optimisticallyUnchokedNeighbor(), 0, m*1000);
+    }
+
+    public void readCommon() throws IOException {
+        BufferedReader reader;
+        try {
+            reader = new BufferedReader(new FileReader("Common.cfg"));
+            String line = reader.readLine();
+            while (line != null) {
+                String[] splitted = line.split(" ");
+                if (splitted[0].equals("NumberOfPreferredNeighbors")) {
+                    k = Integer.parseInt(splitted[1]);
+                }
+                else if (splitted[0].equals("UnchokingInterval"))  {
+                    p = Integer.parseInt(splitted[1]);
+                }
+                else if (splitted[0].equals("OptimisticUnchokingInterval"))  {
+                    m = Integer.parseInt(splitted[1]);
+                }
+                else if (splitted[0].equals("PieceSize"))  {
+                    PieceSize = Integer.parseInt(splitted[1]);
+                }
+                line = reader.readLine();
+            }
+            reader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void connectToPeer(int otherPeerID, String otherPeerHostName, int otherPeerPort) throws IOException {
