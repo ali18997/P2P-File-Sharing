@@ -71,7 +71,7 @@ public class CommonMethods {
                 for (int i = 0; i < length; i++) {
                     if (haveBitFields.containsKey(name)) {
                         if (bitFieldClient.bitField[i] == 0 && bitFieldServer.bitField[i] == 1 && haveBitFields.get(name)[i] == 0) {
-                            CommonMethods.sendHave(i, bitFieldServer, haveBitFields, out);
+                            sendHave(i, bitFieldServer, haveBitFields, out);
                         }
                     }
                 }
@@ -89,7 +89,7 @@ public class CommonMethods {
                 int length = bitFieldClient.bitField.length;
                 for (int i = 0; i < length; i++) {
                     if (bitFieldClient.bitField[i] == 0 && bitFieldServer.bitField[i] == 1 && haveBitFields.get(name)[i] == 0) {
-                        CommonMethods.sendHave(i, bitFieldServer, haveBitFields, out);
+                        sendHave(i, bitFieldServer, haveBitFields, out);
                     }
                 }
             }
@@ -142,18 +142,18 @@ public class CommonMethods {
                             Request request = new Request(name, pieceIndex);
                             PayloadMessage pieceRequest = new PayloadMessage(MessageConversion.messageToBytes(request));
                             ActualMessage requestMessage = new ActualMessage(1, 6, pieceRequest);
-                            CommonMethods.sendMessage(MessageConversion.messageToBytes(requestMessage), out);
+                            sendMessage(MessageConversion.messageToBytes(requestMessage), out);
                             break outerloop;
                         }
                     }
                 } else {
-                    CommonMethods.prepareToReceiveFile(bitFieldClient, currentPeerBitField, files, requestBitFields);
+                    prepareToReceiveFile(bitFieldClient, currentPeerBitField, files, requestBitFields);
 
                     byte[] pieceIndex = ByteBuffer.allocate(4).putInt(0).array();
                     Request request = new Request(name, pieceIndex);
                     PayloadMessage pieceRequest = new PayloadMessage(MessageConversion.messageToBytes(request));
                     ActualMessage requestMessage = new ActualMessage(1, 6, pieceRequest);
-                    CommonMethods.sendMessage(MessageConversion.messageToBytes(requestMessage), out);
+                    sendMessage(MessageConversion.messageToBytes(requestMessage), out);
                     break outerloop;
                 }
             }
@@ -166,7 +166,7 @@ public class CommonMethods {
                 //UNCHOKE
                 ActualMessage unchokeMessage = new ActualMessage(1, 1, null);
                 try {
-                    CommonMethods.sendMessage(MessageConversion.messageToBytes(unchokeMessage), out);
+                    sendMessage(MessageConversion.messageToBytes(unchokeMessage), out);
                     return true;
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -175,7 +175,7 @@ public class CommonMethods {
                 //CHOKE
                 ActualMessage chokeMessage = new ActualMessage(1, 0, null);
                 try {
-                    CommonMethods.sendMessage(MessageConversion.messageToBytes(chokeMessage), out);
+                    sendMessage(MessageConversion.messageToBytes(chokeMessage), out);
                     return false;
                 } catch (IOException e) {
                     e.printStackTrace();

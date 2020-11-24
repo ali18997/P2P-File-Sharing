@@ -23,8 +23,8 @@ public class ServerFurther {
         private int otherPeerID;
         private Boolean requestFlag = false;
         private int PieceSize;
-        private FlagObservable flag;
-        private FlagObservable flag2;
+        private FlagObservable flagHave;
+        private FlagObservable flagNeighbours;
 
         private HashMap<String, BitField> bitFields;
         private HashMap<String, byte[]> files;
@@ -37,7 +37,7 @@ public class ServerFurther {
         private Boolean sendToClient = false;
         private Boolean requestFromClient = false;
 
-        public Handler(Socket connection, int no, int peerID, HashMap<String, byte[]> requestBitFields, HashMap<String, BitField> bitFields, HashMap<String, byte[]> files, int PieceSize, FlagObservable flag, FlagObservable flag2, HashMap<Integer, Integer> connectedPeersRates, HashMap<Integer, Boolean> interestedPeers) throws IOException {
+        public Handler(Socket connection, int no, int peerID, HashMap<String, byte[]> requestBitFields, HashMap<String, BitField> bitFields, HashMap<String, byte[]> files, int PieceSize, FlagObservable flagHave, FlagObservable flagNeighbours, HashMap<Integer, Integer> connectedPeersRates, HashMap<Integer, Boolean> interestedPeers) throws IOException {
             this.connection = connection;
             this.no = no;
             this.peerID = peerID;
@@ -45,31 +45,30 @@ public class ServerFurther {
             this.bitFields = bitFields;
             this.files = files;
             this.PieceSize = PieceSize;
-            this.flag = flag;
-            this.flag2 = flag2;
+            this.flagHave = flagHave;
+            this.flagNeighbours = flagNeighbours;
             this.connectedPeersRates = connectedPeersRates;
             this.interestedPeers = interestedPeers;
 
-            FlagObserver observer = new FlagObserver();
-            FlagObserver2 observer2 = new FlagObserver2();
-            flag.addObserver(observer);
-            flag2.addObserver(observer2);
+            FlagObserverHave observerHave = new FlagObserverHave();
+            FlagObserverNeighbours observerNeighbours = new FlagObserverNeighbours();
+            flagHave.addObserver(observerHave);
+            flagNeighbours.addObserver(observerNeighbours);
             CommonMethods.prepareBitFields(peerID, PieceSize, bitFields);
         }
 
-        public class FlagObserver implements Observer {
+        public class FlagObserverHave implements Observer {
 
-            public FlagObserver() {}
+            public FlagObserverHave() {}
 
             public void update(Observable obj, Object arg) {
                 CommonMethods.haveDetect(bitFields, clientBitFields, haveBitFields, out);
             }
         }
 
-        public class FlagObserver2 implements Observer {
+        public class FlagObserverNeighbours implements Observer {
 
-            public FlagObserver2() {
-            }
+            public FlagObserverNeighbours() {}
 
             public void update(Observable obj, Object arg) {
                 sendToClient = CommonMethods.updateNeighbours(otherPeerID, interestedPeers, sendToClient, out);
@@ -273,7 +272,7 @@ public class ServerFurther {
                                 bitFields.get(fname).getBitField()[pieceNum] = 1;
                                 connectedPeersRates.replace(otherPeerID, connectedPeersRates.get(otherPeerID) + bitFields.get(fname).getPieceSize());
 
-                                flag.setFlag(!flag.getFlag());
+                                flagHave.setFlag(!flagHave.getFlag());
 
 
 
