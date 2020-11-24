@@ -63,33 +63,45 @@ public class CommonMethods {
     public static void haveDetect(HashMap<String, BitField> currentPeerBitFields, HashMap<String, BitField> otherPeerBitFields, HashMap<String, byte[]> haveBitFields, ObjectOutputStream out) {
         for (Map.Entry mapElement : currentPeerBitFields.entrySet()) {
             String name = (String) mapElement.getKey();
-            BitField bitFieldServer = ((BitField) mapElement.getValue());
+            BitField bitFieldCurrent = ((BitField) mapElement.getValue());
 
             if (otherPeerBitFields.containsKey(name)) {
-                BitField bitFieldClient = otherPeerBitFields.get(name);
-                int length = bitFieldClient.bitField.length;
+                BitField bitFieldOther = otherPeerBitFields.get(name);
+                int length = bitFieldOther.bitField.length;
                 for (int i = 0; i < length; i++) {
                     if (haveBitFields.containsKey(name)) {
-                        if (bitFieldClient.bitField[i] == 0 && bitFieldServer.bitField[i] == 1 && haveBitFields.get(name)[i] == 0) {
-                            sendHave(i, bitFieldServer, haveBitFields, out);
+                        if (bitFieldCurrent.bitField[i] == 1 && haveBitFields.get(name)[i] == 0) {
+                            sendHave(i, bitFieldCurrent, haveBitFields, out);
+                        }
+                    }
+                    else{
+                        byte[] temp2 = new byte[bitFieldCurrent.getBitField().length];
+                        for (int j = 0; j < bitFieldCurrent.getBitField().length; j++) {
+                            temp2[j] = 0;
+                        }
+                        haveBitFields.put(name, temp2);
+                        for (int k = 0; k < length; k++) {
+                            if (bitFieldCurrent.bitField[k] == 1 && haveBitFields.get(name)[k] == 0) {
+                                sendHave(k, bitFieldCurrent, haveBitFields, out);
+                            }
                         }
                     }
                 }
             }
             else {
-                BitField temp = new BitField(name, bitFieldServer.getFileSize(), bitFieldServer.getPieceSize(), new byte[bitFieldServer.getBitField().length]);
-                byte[] temp2 = new byte[bitFieldServer.getBitField().length];
+                BitField temp = new BitField(name, bitFieldCurrent.getFileSize(), bitFieldCurrent.getPieceSize(), new byte[bitFieldCurrent.getBitField().length]);
+                byte[] temp2 = new byte[bitFieldCurrent.getBitField().length];
                 for (int i = 0; i < temp.getBitField().length; i++) {
                     temp.getBitField()[i] = 0;
                     temp2[i] = 0;
                 }
                 otherPeerBitFields.put(name, temp);
                 haveBitFields.put(name, temp2);
-                BitField bitFieldClient = otherPeerBitFields.get(name);
-                int length = bitFieldClient.bitField.length;
+                BitField bitFieldOther = otherPeerBitFields.get(name);
+                int length = bitFieldOther.bitField.length;
                 for (int i = 0; i < length; i++) {
-                    if (bitFieldClient.bitField[i] == 0 && bitFieldServer.bitField[i] == 1 && haveBitFields.get(name)[i] == 0) {
-                        sendHave(i, bitFieldServer, haveBitFields, out);
+                    if (bitFieldCurrent.bitField[i] == 1 && haveBitFields.get(name)[i] == 0) {
+                        sendHave(i, bitFieldCurrent, haveBitFields, out);
                     }
                 }
             }

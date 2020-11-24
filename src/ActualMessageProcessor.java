@@ -60,6 +60,7 @@ public class ActualMessageProcessor {
 
         } else if (actualMessage.getMessageType() == 1) {
             //UNCHOKE
+            CommonMethods.redundantRequests(bitFields, requestBitFields);
             System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] is unchoked by [" + otherPeerID + "]");
             requestFromOtherPeer = true;
             CommonMethods.requestPiece(requestFromOtherPeer, bitFields, otherPeerBitFields, requestBitFields, files, out);
@@ -82,6 +83,21 @@ public class ActualMessageProcessor {
 
             otherPeerBitFields.get(name).getBitField()[pieceNum] = 1;
 
+            byte[] temp = otherPeerBitFields.get(name).getBitField();
+            Boolean tempFlag = true;
+            for (int i = 0; i < otherPeerBitFields.get(name).getBitField().length - 1; i++) {
+                if (temp[i] == 0) {
+                    tempFlag = false;
+                    break;
+                }
+            }
+
+            if (tempFlag) {
+                if (interestedPeers.containsKey(otherPeerID)) {
+                    interestedPeers.remove(otherPeerID);
+                }
+            }
+
             System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] received the \"have\" message from [" + otherPeerID + "] for the piece [" + pieceNum + "]");
             if (requestFromOtherPeer) {
                 CommonMethods.requestPiece(requestFromOtherPeer, bitFields, otherPeerBitFields, requestBitFields, files, out);
@@ -97,10 +113,7 @@ public class ActualMessageProcessor {
                 }
             }
         } else if (actualMessage.getMessageType() == 5) {
-            //System.out.println("Peer " + peerID + " received Bitfield Message from " + otherPeerID);
-
             BitField bitField = (BitField) MessageConversion.bytesToMessage(actualMessage.getPayload().getMessage());
-
             otherPeerBitFields.put(bitField.getFileName(), bitField);
 
             if (requestFlag == false) {
@@ -149,7 +162,6 @@ public class ActualMessageProcessor {
 
             int pieceNum = ByteBuffer.wrap(msg.getPieceIndex()).getInt();
 
-            //System.out.println("Peer " + peerID + " received Request Message from " + otherPeerID + " for file: " + name + " piece: " + pieceNum);
             if (sendToOtherPeer) {
                 if (bitFields.get(name).bitField[pieceNum] == 1) {
                     byte[] piece = Arrays.copyOfRange(files.get(name), pieceNum * bitFields.get(name).PieceSize, pieceNum * bitFields.get(name).PieceSize + bitFields.get(name).PieceSize);
@@ -189,14 +201,6 @@ public class ActualMessageProcessor {
             Piece a = (Piece) MessageConversion.bytesToMessage(actualMessage.getPayload().getMessage());
             int pieceNum = ByteBuffer.wrap(a.getPieceIndex()).getInt();
             String fname = a.getName();
-            int count = 0;
-            for (int i = 0; i < bitFields.get(fname).getBitField().length; i++) {
-                if (bitFields.get(fname).getBitField()[i] == 1) {
-                    count = count + 1;
-                }
-            }
-            System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] has downloaded the piece [" + pieceNum + "] from [" + otherPeerID + "]. Now the number of pieces it has is [" + (count + 1) + "]");
-
 
             byte[] piece = a.getPiece();
             for (int i = 0; i < bitFields.get(fname).getPieceSize(); i++) {
@@ -207,6 +211,14 @@ public class ActualMessageProcessor {
             bitFields.get(fname).getBitField()[pieceNum] = 1;
             connectedPeersRates.replace(otherPeerID, connectedPeersRates.get(otherPeerID) + bitFields.get(fname).getPieceSize());
 
+            int count = 0;
+            for (int i = 0; i < bitFields.get(fname).getBitField().length; i++) {
+                if (bitFields.get(fname).getBitField()[i] == 1) {
+                    count = count + 1;
+                }
+            }
+            System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] has downloaded the piece [" + pieceNum + "] from [" + otherPeerID + "]. Now the number of pieces it has is [" + count  + "]");
+
             flagHave.setFlag(!flagHave.getFlag());
 
 
@@ -215,6 +227,7 @@ public class ActualMessageProcessor {
             for (int i = 0; i < bitFields.get(fname).getBitField().length - 1; i++) {
                 if (temp[i] == 0) {
                     tempFlag = false;
+                    break;
                 }
             }
             if (tempFlag) {
