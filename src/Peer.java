@@ -69,7 +69,6 @@ public class Peer {
                 }
                 else {
                     connectToPeer(Integer.parseInt(splitted[0]), splitted[1], Integer.parseInt(splitted[2]));
-                    System.out.println(peerID + " " + splitted[0]);
                 }
                 line = reader.readLine();
             }

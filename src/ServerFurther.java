@@ -389,6 +389,18 @@ public class ServerFurther {
                                             clientBitFields.put(name, temp2);
                                         }
                                         clientBitFields.get(name).bitField[pieceNum] = 1;
+
+                                        byte[] temp = clientBitFields.get(name).bitField;
+                                        Boolean tempFlag = true;
+                                        for (int i = 0; i < clientBitFields.get(name).bitField.length-1; i++){
+                                            if(temp[i] == 0){
+                                                tempFlag = false;
+                                            }
+                                        }
+                                        if(tempFlag) {
+                                            interestedPeers.remove(otherPeerID);
+                                            System.out.println(peerID + " removed " + otherPeerID + " from interested");
+                                        }
                                     }
                                 }
                                 else {
