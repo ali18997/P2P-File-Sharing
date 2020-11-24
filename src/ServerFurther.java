@@ -5,6 +5,7 @@ import java.nio.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 public class ServerFurther {
 
@@ -73,6 +74,19 @@ public class ServerFurther {
                 System.out.println("Server Error 1 " + e.toString());
             }
 
+        }
+
+        private void redundantRequests(){
+            for (Map.Entry mapElement : bitFields.entrySet()) {
+                String name = (String)mapElement.getKey();
+                byte[] bitField = ((BitField)mapElement.getValue()).getBitField();
+                byte[] bitField1 = requestBitFields.get(name);
+                for (int i = 0; i < bitField.length; i++){
+                    if(bitField[i] == 0){
+                        bitField1[i] = 0;
+                    }
+                }
+            }
         }
 
         public class FlagObserver implements Observer {
@@ -240,6 +254,12 @@ public class ServerFurther {
                 try{
                     while(true)
                     {
+                        try {
+                            Random rand = new Random();
+                            TimeUnit.MILLISECONDS.sleep(rand.nextInt(500));
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
                         //checkNewPieces();
                         Object receivedMsg = MessageConversion.bytesToMessage((byte[]) in.readObject());
                         if (receivedMsg instanceof HandshakeMessage) {
@@ -268,6 +288,7 @@ public class ServerFurther {
                                 //CHOKE
                                 System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] is choked by [" + otherPeerID + "]");
                                 requestFromClient = false;
+                                redundantRequests();
 
                             }
                             else if (actualMessage.getMessageType() == 1) {
@@ -399,7 +420,6 @@ public class ServerFurther {
                                         }
                                         if(tempFlag) {
                                             interestedPeers.remove(otherPeerID);
-                                            System.out.println(peerID + " removed " + otherPeerID + " from interested");
                                         }
                                     }
                                 }

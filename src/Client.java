@@ -76,6 +76,19 @@ public class Client {
 
     }
 
+    private void redundantRequests(){
+        for (Map.Entry mapElement : bitFields.entrySet()) {
+            String name = (String)mapElement.getKey();
+            byte[] bitField = ((BitField)mapElement.getValue()).getBitField();
+            byte[] bitField1 = requestBitFields.get(name);
+            for (int i = 0; i < bitField.length; i++){
+                if(bitField[i] == 0){
+                    bitField1[i] = 0;
+                }
+            }
+        }
+    }
+
     public class FlagObserver implements Observer {
 
         public FlagObserver() {}
@@ -252,7 +265,8 @@ public class Client {
 
                     while (true) {
                         try {
-                            TimeUnit.MILLISECONDS.sleep(50);
+                            Random rand = new Random();
+                            TimeUnit.MILLISECONDS.sleep(rand.nextInt(500));
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
@@ -294,6 +308,7 @@ public class Client {
                                     //CHOKE
                                     System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] is choked by [" + otherPeerID + "]");
                                     requestFromServer = false;
+                                    redundantRequests();
                                 }
                                 else if (actualMessage.getMessageType() == 1) {
                                     //UNCHOKE
@@ -492,7 +507,6 @@ public class Client {
                                             }
                                             if(tempFlag) {
                                                 interestedPeers.remove(otherPeerID);
-                                                System.out.println(peerID + " removed " + otherPeerID + " from interested");
                                             }
                                         }
                                     }
