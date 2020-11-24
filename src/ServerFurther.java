@@ -98,40 +98,6 @@ public class ServerFurther {
             }
         }
 
-        public void requestPiece() throws IOException {
-            if(requestFromClient) {
-                outerloop:
-                for (Map.Entry mapElement : clientBitFields.entrySet()) {
-                    String name = (String) mapElement.getKey();
-                    BitField bitFieldClient = ((BitField) mapElement.getValue());
-
-                    if (bitFields.containsKey(name)) {
-                        BitField bitFieldServer = bitFields.get(name);
-                        int length = bitFieldServer.bitField.length;
-                        for (int i = 0; i < length; i++) {
-                            if (bitFieldServer.bitField[i] == 0 && bitFieldClient.bitField[i] == 1 && requestBitFields.get(name)[i] == 0) {
-                                requestBitFields.get(name)[i] = 1;
-                                byte[] pieceIndex = ByteBuffer.allocate(4).putInt(i).array();
-                                Request request = new Request(name, pieceIndex);
-                                PayloadMessage pieceRequest = new PayloadMessage(MessageConversion.messageToBytes(request));
-                                ActualMessage requestMessage = new ActualMessage(1, 6, pieceRequest);
-                                CommonMethods.sendMessage(MessageConversion.messageToBytes(requestMessage), out);
-                                break outerloop;
-                            }
-                        }
-                    } else {
-                        CommonMethods.prepareToReceiveFile(bitFieldClient, bitFields, files, requestBitFields);
-
-                        byte[] pieceIndex = ByteBuffer.allocate(4).putInt(0).array();
-                        Request request = new Request(name, pieceIndex);
-                        PayloadMessage pieceRequest = new PayloadMessage(MessageConversion.messageToBytes(request));
-                        ActualMessage requestMessage = new ActualMessage(1, 6, pieceRequest);
-                        CommonMethods.sendMessage(MessageConversion.messageToBytes(requestMessage), out);
-                        break outerloop;
-                    }
-                }
-            }
-        }
 
         public void run() {
             try{
@@ -175,7 +141,7 @@ public class ServerFurther {
                                 //UNCHOKE
                                 System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] is unchoked by [" + otherPeerID + "]");
                                 requestFromClient = true;
-                                requestPiece();
+                                CommonMethods.requestPiece(requestFromClient, bitFields, clientBitFields, requestBitFields, files, out);
                             }
                             else if (actualMessage.getMessageType() == 2) {
                                 System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] received the \"interested\" message from [" + otherPeerID + "]");
@@ -201,7 +167,7 @@ public class ServerFurther {
 
                                 System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] received the \"have\" message from [" + otherPeerID + "] for the piece [" + pieceNum + "]");
                                 if(requestFromClient) {
-                                    requestPiece();
+                                    CommonMethods.requestPiece(requestFromClient, bitFields, clientBitFields, requestBitFields, files, out);
                                 }
                                 else {
                                     if(bitFields.containsKey(name)) {
@@ -348,7 +314,7 @@ public class ServerFurther {
                                     Files.write(Path.of(System.getProperty("user.dir") + "/peerFolder/" + peerID + "/" + fname), files.get(fname));
 
                                 }
-                                requestPiece();
+                                CommonMethods.requestPiece(requestFromClient, bitFields, clientBitFields, requestBitFields, files, out);
                             }
                         }
                     }

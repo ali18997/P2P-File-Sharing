@@ -125,6 +125,43 @@ public class CommonMethods {
         requestBitFields.put(bitField.getFileName(), temp3);
     }
 
+    public static void requestPiece(Boolean canRequestOtherPeer, HashMap<String, BitField> currentPeerBitField, HashMap<String, BitField> otherPeerBitField, HashMap<String, byte[]> requestBitFields, HashMap<String, byte[]> files, ObjectOutputStream out) throws IOException {
+        if(canRequestOtherPeer) {
+            outerloop:
+            for (Map.Entry mapElement : otherPeerBitField.entrySet()) {
+                String name = (String) mapElement.getKey();
+                BitField bitFieldClient = ((BitField) mapElement.getValue());
+
+                if (currentPeerBitField.containsKey(name)) {
+                    BitField bitFieldServer = currentPeerBitField.get(name);
+                    int length = bitFieldServer.bitField.length;
+                    for (int i = 0; i < length; i++) {
+                        if (bitFieldServer.bitField[i] == 0 && bitFieldClient.bitField[i] == 1 && requestBitFields.get(name)[i] == 0) {
+                            requestBitFields.get(name)[i] = 1;
+                            byte[] pieceIndex = ByteBuffer.allocate(4).putInt(i).array();
+                            Request request = new Request(name, pieceIndex);
+                            PayloadMessage pieceRequest = new PayloadMessage(MessageConversion.messageToBytes(request));
+                            ActualMessage requestMessage = new ActualMessage(1, 6, pieceRequest);
+                            CommonMethods.sendMessage(MessageConversion.messageToBytes(requestMessage), out);
+                            break outerloop;
+                        }
+                    }
+                } else {
+                    CommonMethods.prepareToReceiveFile(bitFieldClient, currentPeerBitField, files, requestBitFields);
+
+                    byte[] pieceIndex = ByteBuffer.allocate(4).putInt(0).array();
+                    Request request = new Request(name, pieceIndex);
+                    PayloadMessage pieceRequest = new PayloadMessage(MessageConversion.messageToBytes(request));
+                    ActualMessage requestMessage = new ActualMessage(1, 6, pieceRequest);
+                    CommonMethods.sendMessage(MessageConversion.messageToBytes(requestMessage), out);
+                    break outerloop;
+                }
+            }
+        }
+    }
+
+
+
 
 
 

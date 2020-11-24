@@ -111,41 +111,6 @@ public class Client {
         requestSocket.close();
     }
 
-    public void requestPiece() throws IOException {
-        if(requestFromServer) {
-            outerloop:
-            for (Map.Entry mapElement : serverBitFields.entrySet()) {
-                String name = (String) mapElement.getKey();
-                BitField bitFieldServer = ((BitField) mapElement.getValue());
-
-                if (bitFields.containsKey(name)) {
-                    BitField bitFieldClient = bitFields.get(name);
-                    int length = bitFieldClient.bitField.length;
-                    for (int i = 0; i < length; i++) {
-                        if (bitFieldClient.bitField[i] == 0 && bitFieldServer.bitField[i] == 1 && requestBitFields.get(name)[i] == 0) {
-                            requestBitFields.get(name)[i] = 1;
-                            byte[] pieceIndex = ByteBuffer.allocate(4).putInt(i).array();
-                            Request request = new Request(name, pieceIndex);
-                            PayloadMessage pieceRequest = new PayloadMessage(MessageConversion.messageToBytes(request));
-                            ActualMessage requestMessage = new ActualMessage(1, 6, pieceRequest);
-                            CommonMethods.sendMessage(MessageConversion.messageToBytes(requestMessage), out);
-                            break outerloop;
-                        }
-                    }
-                } else {
-                    CommonMethods.prepareToReceiveFile(bitFieldServer, bitFields, files, requestBitFields);
-
-                    byte[] pieceIndex = ByteBuffer.allocate(4).putInt(0).array();
-                    Request request = new Request(name, pieceIndex);
-                    PayloadMessage pieceRequest = new PayloadMessage(MessageConversion.messageToBytes(request));
-                    ActualMessage requestMessage = new ActualMessage(1, 6, pieceRequest);
-                    CommonMethods.sendMessage(MessageConversion.messageToBytes(requestMessage), out);
-                    break outerloop;
-                }
-            }
-        }
-    }
-
     public class MessageReceiving extends Thread {
         public void run() {
 
@@ -195,7 +160,7 @@ public class Client {
                                     System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] is unchoked by [" + otherPeerID + "]");
                                     try {
                                         requestFromServer = true;
-                                        requestPiece();
+                                        CommonMethods.requestPiece(requestFromServer, bitFields, serverBitFields, requestBitFields, files, out);
                                     } catch (IOException e) {
                                         System.out.println("Client Error 6 " + e.toString());
                                     }
@@ -232,7 +197,7 @@ public class Client {
 
                                         if(requestFromServer) {
                                             try {
-                                                requestPiece();
+                                                CommonMethods.requestPiece(requestFromServer, bitFields, serverBitFields, requestBitFields, files, out);
                                             } catch (IOException e) {
                                                 e.printStackTrace();
                                             }
@@ -446,7 +411,7 @@ public class Client {
 
 
                                         try {
-                                            requestPiece();
+                                            CommonMethods.requestPiece(requestFromServer, bitFields, serverBitFields, requestBitFields, files, out);
                                         } catch (IOException e) {
                                             System.out.println("Client Error 24 " + e.toString());
                                         }
