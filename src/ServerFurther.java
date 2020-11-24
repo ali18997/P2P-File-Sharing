@@ -63,39 +63,7 @@ public class ServerFurther {
 
             public void update(Observable obj, Object arg) {
 
-                for (Map.Entry mapElement : bitFields.entrySet()) {
-                    String name = (String) mapElement.getKey();
-                    BitField bitFieldServer = ((BitField) mapElement.getValue());
-
-                    if (clientBitFields.containsKey(name)) {
-                        BitField bitFieldClient = clientBitFields.get(name);
-                        int length = bitFieldClient.bitField.length;
-                        for (int i = 0; i < length; i++) {
-                            if (haveBitFields.containsKey(name)) {
-                                if (bitFieldClient.bitField[i] == 0 && bitFieldServer.bitField[i] == 1 && haveBitFields.get(name)[i] == 0) {
-                                    CommonMethods.sendHave(i, bitFieldServer, haveBitFields, out);
-                                }
-                            }
-                        }
-                    }
-                    else {
-                        BitField temp = new BitField(name, bitFieldServer.getFileSize(), bitFieldServer.getPieceSize(), new byte[bitFieldServer.getBitField().length]);
-                        byte[] temp2 = new byte[bitFieldServer.getBitField().length];
-                        for (int i = 0; i < temp.getBitField().length; i++) {
-                            temp.getBitField()[i] = 0;
-                            temp2[i] = 0;
-                        }
-                        clientBitFields.put(name, temp);
-                        haveBitFields.put(name, temp2);
-                        BitField bitFieldClient = clientBitFields.get(name);
-                        int length = bitFieldClient.bitField.length;
-                        for (int i = 0; i < length; i++) {
-                            if (bitFieldClient.bitField[i] == 0 && bitFieldServer.bitField[i] == 1 && haveBitFields.get(name)[i] == 0) {
-                                CommonMethods.sendHave(i, bitFieldServer, haveBitFields, out);
-                            }
-                        }
-                    }
-                }
+                CommonMethods.haveDetect(bitFields, clientBitFields, haveBitFields, out);
 
             }
         }

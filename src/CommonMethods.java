@@ -60,6 +60,42 @@ public class CommonMethods {
         }
     }
 
+    public static void haveDetect(HashMap<String, BitField> currentPeerBitFields, HashMap<String, BitField> otherPeerBitFields, HashMap<String, byte[]> haveBitFields, ObjectOutputStream out) {
+        for (Map.Entry mapElement : currentPeerBitFields.entrySet()) {
+            String name = (String) mapElement.getKey();
+            BitField bitFieldServer = ((BitField) mapElement.getValue());
+
+            if (otherPeerBitFields.containsKey(name)) {
+                BitField bitFieldClient = otherPeerBitFields.get(name);
+                int length = bitFieldClient.bitField.length;
+                for (int i = 0; i < length; i++) {
+                    if (haveBitFields.containsKey(name)) {
+                        if (bitFieldClient.bitField[i] == 0 && bitFieldServer.bitField[i] == 1 && haveBitFields.get(name)[i] == 0) {
+                            CommonMethods.sendHave(i, bitFieldServer, haveBitFields, out);
+                        }
+                    }
+                }
+            }
+            else {
+                BitField temp = new BitField(name, bitFieldServer.getFileSize(), bitFieldServer.getPieceSize(), new byte[bitFieldServer.getBitField().length]);
+                byte[] temp2 = new byte[bitFieldServer.getBitField().length];
+                for (int i = 0; i < temp.getBitField().length; i++) {
+                    temp.getBitField()[i] = 0;
+                    temp2[i] = 0;
+                }
+                otherPeerBitFields.put(name, temp);
+                haveBitFields.put(name, temp2);
+                BitField bitFieldClient = otherPeerBitFields.get(name);
+                int length = bitFieldClient.bitField.length;
+                for (int i = 0; i < length; i++) {
+                    if (bitFieldClient.bitField[i] == 0 && bitFieldServer.bitField[i] == 1 && haveBitFields.get(name)[i] == 0) {
+                        CommonMethods.sendHave(i, bitFieldServer, haveBitFields, out);
+                    }
+                }
+            }
+        }
+    }
+
 
 
 
