@@ -68,37 +68,13 @@ public class ServerFurther {
 
         public class FlagObserver2 implements Observer {
 
-            public FlagObserver2() {}
+            public FlagObserver2() {
+            }
 
             public void update(Observable obj, Object arg) {
-                updateNeighbours();
+                sendToClient = CommonMethods.updateNeighbours(otherPeerID, interestedPeers, sendToClient, out);
             }
         }
-
-        public void updateNeighbours() {
-            if(interestedPeers.containsKey(otherPeerID)) {
-                if (sendToClient == false && interestedPeers.get(otherPeerID) == true) {
-                    //UNCHOKE
-                    ActualMessage unchokeMessage = new ActualMessage(1, 1, null);
-                    try {
-                        sendToClient = true;
-                        CommonMethods.sendMessage(MessageConversion.messageToBytes(unchokeMessage), out);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                } else if (sendToClient == true && interestedPeers.get(otherPeerID) == false) {
-                    //CHOKE
-                    ActualMessage chokeMessage = new ActualMessage(1, 0, null);
-                    try {
-                        sendToClient = false;
-                        CommonMethods.sendMessage(MessageConversion.messageToBytes(chokeMessage), out);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }
-
 
         public void run() {
             try{

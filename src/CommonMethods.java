@@ -160,6 +160,31 @@ public class CommonMethods {
         }
     }
 
+    public static Boolean updateNeighbours(int otherPeerID, HashMap<Integer, Boolean> interestedPeers, Boolean sendToOtherPeer, ObjectOutputStream out) {
+        if(interestedPeers.containsKey(otherPeerID)) {
+            if (sendToOtherPeer == false && interestedPeers.get(otherPeerID) == true) {
+                //UNCHOKE
+                ActualMessage unchokeMessage = new ActualMessage(1, 1, null);
+                try {
+                    CommonMethods.sendMessage(MessageConversion.messageToBytes(unchokeMessage), out);
+                    return true;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            } else if (sendToOtherPeer == true && interestedPeers.get(otherPeerID) == false) {
+                //CHOKE
+                ActualMessage chokeMessage = new ActualMessage(1, 0, null);
+                try {
+                    CommonMethods.sendMessage(MessageConversion.messageToBytes(chokeMessage), out);
+                    return false;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return sendToOtherPeer;
+    }
+
 
 
 

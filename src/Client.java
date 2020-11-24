@@ -73,33 +73,11 @@ public class Client {
         public FlagObserver2() {}
 
         public void update(Observable obj, Object arg) {
-            updateNeighbours();
+            sendToServer = CommonMethods.updateNeighbours(otherPeerID, interestedPeers, sendToServer, out);
         }
     }
 
-    public void updateNeighbours() {
-        if(interestedPeers.containsKey(otherPeerID)) {
-            if (sendToServer == false && interestedPeers.get(otherPeerID) == true) {
-                //UNCHOKE
-                ActualMessage unchokeMessage = new ActualMessage(1, 1, null);
-                try {
-                    sendToServer = true;
-                    CommonMethods.sendMessage(MessageConversion.messageToBytes(unchokeMessage), out);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            } else if (sendToServer == true && interestedPeers.get(otherPeerID) == false) {
-                //CHOKE
-                ActualMessage chokeMessage = new ActualMessage(1, 0, null);
-                try {
-                    sendToServer = false;
-                    CommonMethods.sendMessage(MessageConversion.messageToBytes(chokeMessage), out);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
+
 
     public String getMessage() throws IOException, ClassNotFoundException {
         String MESSAGE = (String)in.readObject();
