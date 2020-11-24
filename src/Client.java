@@ -49,7 +49,7 @@ public class Client {
         out = new ObjectOutputStream(requestSocket.getOutputStream());
         out.flush();
         in = new ObjectInputStream(requestSocket.getInputStream());
-        prepareBitFields();
+        CommonMethods.prepareBitFields(peerID, PieceSize, bitFields);
         new MessageReceiving().start();
     }
 
@@ -97,22 +97,6 @@ public class Client {
                     }
                 }
             }
-        }
-    }
-
-    public void prepareBitFields() throws IOException {
-        final File folder = new File(System.getProperty("user.dir") + "/peerFolder/" + peerID);
-        if (!folder.exists()){folder.mkdir();}
-        for (final File fileEntry : folder.listFiles()) {
-                String fileName = fileEntry.getName();
-
-                int fsize = (int) Files.size(fileEntry.toPath());
-                byte[] bitFieldArr = new byte[(int) Math.ceil((double)fsize/PieceSize)];
-                for (int i = 0; i < bitFieldArr.length; i++) {
-                    bitFieldArr[i] = 1;
-                }
-                BitField bitField = new BitField(fileName, fsize, PieceSize, bitFieldArr);
-                this.bitFields.put(fileName, bitField);
         }
     }
 

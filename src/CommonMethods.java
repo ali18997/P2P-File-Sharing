@@ -96,6 +96,22 @@ public class CommonMethods {
         }
     }
 
+    public static void prepareBitFields(int peerID, int PieceSize, HashMap<String, BitField> bitFields) throws IOException {
+        final File folder = new File(System.getProperty("user.dir") + "/peerFolder/" + peerID);
+        if (!folder.exists()){folder.mkdir();}
+        for (final File fileEntry : folder.listFiles()) {
+            String fileName = fileEntry.getName();
+
+            int fsize = (int) Files.size(fileEntry.toPath());
+            byte[] bitFieldArr = new byte[(int) Math.ceil((double)fsize/PieceSize)];
+            for (int i = 0; i < bitFieldArr.length; i++) {
+                bitFieldArr[i] = 1;
+            }
+            BitField bitField = new BitField(fileName, fsize, PieceSize, bitFieldArr);
+            bitFields.put(fileName, bitField);
+        }
+    }
+
 
 
 
