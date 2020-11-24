@@ -43,6 +43,8 @@ public class ActualMessageProcessor {
         this.PieceSize = PieceSize;
         this.out = out;
 
+        System.out.println("CURRENT PEER ID: " + peerID + " OTHER PEER ID: " + otherPeerID);
+
         FlagObserverHave observerHave = new FlagObserverHave(bitFields, otherPeerBitFields, haveBitFields, out);
         FlagObserverNeighbours observerNeighbours = new FlagObserverNeighbours();
         flagHave.addObserver(observerHave);
@@ -66,7 +68,9 @@ public class ActualMessageProcessor {
         } else if (actualMessage.getMessageType() == 2) {
             System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] received the \"interested\" message from [" + otherPeerID + "]");
 
+            System.out.print("BEFORE: " + peerID + " " + otherPeerID + " " + interestedPeers);
             interestedPeers.put(otherPeerID, false);
+            System.out.print("AFTER: " + peerID + " " + otherPeerID + " " + interestedPeers);
 
         } else if (actualMessage.getMessageType() == 3) {
             System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] received the \"not interested\" message from [" + otherPeerID + "]");

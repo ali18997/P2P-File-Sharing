@@ -125,7 +125,10 @@ public class Peer {
         for (Map.Entry mapElement : interestedPeers.entrySet()) {
             Integer peerPort = (Integer) mapElement.getKey();
             Integer downloadRate = connectedPeersRates.get(peerPort);
-            System.out.println(connectedPeersRates);
+            System.out.println(interestedPeers);
+            System.out.println(peerID + " " + connectedPeersRates);
+            System.out.println(peerPort);
+            System.out.println(connectedPeersRates.get(peerPort));
             if (downloadRate > highestRate) {
                 highestRate = downloadRate;
                 highestPeer = peerPort;

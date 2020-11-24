@@ -21,6 +21,13 @@ public class ServerFurther {
         private HashMap<Integer, Boolean> handshakes = new HashMap<Integer, Boolean>();
         private HashMap<Integer, Integer> connectedPeersRates;
         private ActualMessageProcessor actualMessageProcessor;
+        private HashMap<String, byte[]> requestBitFields;
+        private HashMap<Integer, Boolean> interestedPeers;
+        private FlagObservable flagHave;
+        private FlagObservable flagNeighbours;
+        private HashMap<String, byte[]> files;
+        private int PieceSize;
+
 
         public Handler(Socket connection, int no, int peerID, HashMap<String, byte[]> requestBitFields, HashMap<String, BitField> bitFields, HashMap<String, byte[]> files, int PieceSize, FlagObservable flagHave, FlagObservable flagNeighbours, HashMap<Integer, Integer> connectedPeersRates, HashMap<Integer, Boolean> interestedPeers) throws IOException {
             this.connection = connection;
@@ -28,13 +35,18 @@ public class ServerFurther {
             this.peerID = peerID;
             this.bitFields = bitFields;
             this.connectedPeersRates = connectedPeersRates;
+            this.requestBitFields = requestBitFields;
+            this.interestedPeers = interestedPeers;
+            this.flagHave = flagHave;
+            this.flagNeighbours = flagNeighbours;
+            this.files = files;
+            this.PieceSize = PieceSize;
 
             out = new ObjectOutputStream(connection.getOutputStream());
             out.flush();
             in = new ObjectInputStream(connection.getInputStream());
 
-            actualMessageProcessor = new ActualMessageProcessor(peerID, otherPeerID, bitFields, requestBitFields, this.connectedPeersRates,
-                    interestedPeers, files, flagHave, flagNeighbours, PieceSize, out);
+
         }
 
         public void run() {
@@ -44,14 +56,17 @@ public class ServerFurther {
                     if (receivedMsg instanceof HandshakeMessage) {
                         HandshakeMessage handshakeMessage = (HandshakeMessage) receivedMsg;
                         otherPeerID = handshakeMessage.getPeerID();
+                        actualMessageProcessor = new ActualMessageProcessor(peerID, otherPeerID, bitFields, requestBitFields, this.connectedPeersRates,
+                                interestedPeers, files, flagHave, flagNeighbours, PieceSize, out);
                         if (handshakeMessage.getHeader().equals("P2PFILESHARINGPROJ") && handshakes.get(otherPeerID) == null) {
                             HandshakeMessage handshakeMessageBack = new HandshakeMessage(peerID);
                             handshakes.put(otherPeerID, true);
                             CommonMethods.sendMessage(MessageConversion.messageToBytes(handshakeMessageBack), out);
                         } else if (handshakeMessage.getHeader().equals("P2PFILESHARINGPROJ") && handshakes.get(otherPeerID) == true) {
                             System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] is connected from Peer [" + otherPeerID + "]");
+                            System.out.println("BEFORE " + peerID + " " + connectedPeersRates);
                             connectedPeersRates.put(otherPeerID, 0);
-
+                            System.out.println("AFTER " + peerID + " " + connectedPeersRates);
                             for (Map.Entry mapElement : bitFields.entrySet()) {
                                 String name = (String) mapElement.getKey();
                                 BitField bitField = ((BitField) mapElement.getValue());
