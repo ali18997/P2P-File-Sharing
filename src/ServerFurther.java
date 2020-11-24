@@ -9,16 +9,15 @@ import java.util.*;
 public class ServerFurther {
 
 
-
     /**
      * A handler thread class.  Handlers are spawned from the listening
      * loop and are responsible for dealing with a single client's requests.
      */
     public static class Handler extends Thread {
         private Socket connection;
-        private ObjectInputStream in;	//stream read from the socket
+        private ObjectInputStream in;    //stream read from the socket
         private ObjectOutputStream out;    //stream write to the socket
-        private int no;		//The index number of the client
+        private int no;        //The index number of the client
         private int peerID;
         private int otherPeerID;
         private Boolean requestFlag = false;
@@ -50,25 +49,21 @@ public class ServerFurther {
             this.connectedPeersRates = connectedPeersRates;
             this.interestedPeers = interestedPeers;
 
-            FlagObserverHave observerHave = new FlagObserverHave();
+            out = new ObjectOutputStream(connection.getOutputStream());
+            out.flush();
+            in = new ObjectInputStream(connection.getInputStream());
+
+            FlagObserverHave observerHave = new FlagObserverHave(bitFields, clientBitFields, haveBitFields, out);
             FlagObserverNeighbours observerNeighbours = new FlagObserverNeighbours();
             flagHave.addObserver(observerHave);
             flagNeighbours.addObserver(observerNeighbours);
             CommonMethods.prepareBitFields(peerID, PieceSize, bitFields);
         }
 
-        public class FlagObserverHave implements Observer {
-
-            public FlagObserverHave() {}
-
-            public void update(Observable obj, Object arg) {
-                CommonMethods.haveDetect(bitFields, clientBitFields, haveBitFields, out);
-            }
-        }
-
         public class FlagObserverNeighbours implements Observer {
 
-            public FlagObserverNeighbours() {}
+            public FlagObserverNeighbours() {
+            }
 
             public void update(Observable obj, Object arg) {
                 sendToClient = CommonMethods.updateNeighbours(otherPeerID, interestedPeers, sendToClient, out);
@@ -76,245 +71,223 @@ public class ServerFurther {
         }
 
         public void run() {
-            try{
-                //initialize Input and Output streams
-                out = new ObjectOutputStream(connection.getOutputStream());
-                out.flush();
-                in = new ObjectInputStream(connection.getInputStream());
-                try{
-                    while(true) {
-                        Object receivedMsg = MessageConversion.bytesToMessage((byte[]) in.readObject());
-                        if (receivedMsg instanceof HandshakeMessage) {
-                            HandshakeMessage handshakeMessage = (HandshakeMessage) receivedMsg;
-                            otherPeerID = handshakeMessage.getPeerID();
-                            if (handshakeMessage.getHeader().equals("P2PFILESHARINGPROJ") && handshakes.get(otherPeerID) == null) {
-                                HandshakeMessage handshakeMessageBack = new HandshakeMessage(peerID);
-                                handshakes.put(otherPeerID, true);
-                                CommonMethods.sendMessage(MessageConversion.messageToBytes(handshakeMessageBack), out);
-                            }
-                            else if (handshakeMessage.getHeader().equals("P2PFILESHARINGPROJ") && handshakes.get(otherPeerID) == true) {
-                                System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] is connected from Peer [" + otherPeerID + "]");
-                                connectedPeersRates.put(otherPeerID, 0);
+            try {
+                while (true) {
+                    Object receivedMsg = MessageConversion.bytesToMessage((byte[]) in.readObject());
+                    if (receivedMsg instanceof HandshakeMessage) {
+                        HandshakeMessage handshakeMessage = (HandshakeMessage) receivedMsg;
+                        otherPeerID = handshakeMessage.getPeerID();
+                        if (handshakeMessage.getHeader().equals("P2PFILESHARINGPROJ") && handshakes.get(otherPeerID) == null) {
+                            HandshakeMessage handshakeMessageBack = new HandshakeMessage(peerID);
+                            handshakes.put(otherPeerID, true);
+                            CommonMethods.sendMessage(MessageConversion.messageToBytes(handshakeMessageBack), out);
+                        } else if (handshakeMessage.getHeader().equals("P2PFILESHARINGPROJ") && handshakes.get(otherPeerID) == true) {
+                            System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] is connected from Peer [" + otherPeerID + "]");
+                            connectedPeersRates.put(otherPeerID, 0);
 
-                                for (Map.Entry mapElement : bitFields.entrySet()) {
-                                    String name = (String)mapElement.getKey();
-                                    BitField bitField = ((BitField)mapElement.getValue());
-                                    ActualMessage bitFieldMessage = new ActualMessage(1, 5, new PayloadMessage(MessageConversion.messageToBytes(bitField)));
-                                    CommonMethods.sendMessage(MessageConversion.messageToBytes(bitFieldMessage), out);
-                                }
+                            for (Map.Entry mapElement : bitFields.entrySet()) {
+                                String name = (String) mapElement.getKey();
+                                BitField bitField = ((BitField) mapElement.getValue());
+                                ActualMessage bitFieldMessage = new ActualMessage(1, 5, new PayloadMessage(MessageConversion.messageToBytes(bitField)));
+                                CommonMethods.sendMessage(MessageConversion.messageToBytes(bitFieldMessage), out);
                             }
                         }
-                        else if (receivedMsg instanceof ActualMessage) {
-                            ActualMessage actualMessage = (ActualMessage) receivedMsg;
-                            if (actualMessage.getMessageType() == 0) {
-                                //CHOKE
-                                System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] is choked by [" + otherPeerID + "]");
-                                requestFromClient = false;
-                                CommonMethods.redundantRequests(bitFields, requestBitFields);
+                    } else if (receivedMsg instanceof ActualMessage) {
+                        ActualMessage actualMessage = (ActualMessage) receivedMsg;
+                        if (actualMessage.getMessageType() == 0) {
+                            //CHOKE
+                            System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] is choked by [" + otherPeerID + "]");
+                            requestFromClient = false;
+                            CommonMethods.redundantRequests(bitFields, requestBitFields);
 
+                        } else if (actualMessage.getMessageType() == 1) {
+                            //UNCHOKE
+                            System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] is unchoked by [" + otherPeerID + "]");
+                            requestFromClient = true;
+                            CommonMethods.requestPiece(requestFromClient, bitFields, clientBitFields, requestBitFields, files, out);
+                        } else if (actualMessage.getMessageType() == 2) {
+                            System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] received the \"interested\" message from [" + otherPeerID + "]");
+
+                            interestedPeers.put(otherPeerID, false);
+
+                        } else if (actualMessage.getMessageType() == 3) {
+                            System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] received the \"not interested\" message from [" + otherPeerID + "]");
+                        } else if (actualMessage.getMessageType() == 4) {
+                            //HAVE
+                            Have msg = (Have) MessageConversion.bytesToMessage(actualMessage.getPayload().getMessage());
+                            String name = msg.getFileName();
+
+                            int pieceNum = ByteBuffer.wrap(msg.getPieceIndex()).getInt();
+
+                            if (!clientBitFields.containsKey(name)) {
+                                clientBitFields.put(name, msg.getBitField());
                             }
-                            else if (actualMessage.getMessageType() == 1) {
-                                //UNCHOKE
-                                System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] is unchoked by [" + otherPeerID + "]");
-                                requestFromClient = true;
+
+                            clientBitFields.get(name).getBitField()[pieceNum] = 1;
+
+                            System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] received the \"have\" message from [" + otherPeerID + "] for the piece [" + pieceNum + "]");
+                            if (requestFromClient) {
                                 CommonMethods.requestPiece(requestFromClient, bitFields, clientBitFields, requestBitFields, files, out);
-                            }
-                            else if (actualMessage.getMessageType() == 2) {
-                                System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] received the \"interested\" message from [" + otherPeerID + "]");
-
-                                interestedPeers.put(otherPeerID, false);
-
-                            }
-                            else if (actualMessage.getMessageType() == 3) {
-                                System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] received the \"not interested\" message from [" + otherPeerID + "]");
-                            }
-                            else if (actualMessage.getMessageType() == 4) {
-                                //HAVE
-                                Have msg = (Have) MessageConversion.bytesToMessage(actualMessage.getPayload().getMessage());
-                                String name = msg.getFileName();
-
-                                int pieceNum = ByteBuffer.wrap(msg.getPieceIndex()).getInt();
-
-                                if (!clientBitFields.containsKey(name)){
-                                    clientBitFields.put(name, msg.getBitField());
-                                }
-
-                                clientBitFields.get(name).getBitField()[pieceNum] = 1;
-
-                                System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] received the \"have\" message from [" + otherPeerID + "] for the piece [" + pieceNum + "]");
-                                if(requestFromClient) {
-                                    CommonMethods.requestPiece(requestFromClient, bitFields, clientBitFields, requestBitFields, files, out);
-                                }
-                                else {
-                                    if(bitFields.containsKey(name)) {
-                                        if (bitFields.get(name).getBitField()[pieceNum] == 0) {
-                                            ActualMessage interestMessage = new ActualMessage(1, 2, null);
-                                            CommonMethods.sendMessage(MessageConversion.messageToBytes(interestMessage), out);
-                                        }
-                                    }
-                                    else {
+                            } else {
+                                if (bitFields.containsKey(name)) {
+                                    if (bitFields.get(name).getBitField()[pieceNum] == 0) {
                                         ActualMessage interestMessage = new ActualMessage(1, 2, null);
                                         CommonMethods.sendMessage(MessageConversion.messageToBytes(interestMessage), out);
                                     }
+                                } else {
+                                    ActualMessage interestMessage = new ActualMessage(1, 2, null);
+                                    CommonMethods.sendMessage(MessageConversion.messageToBytes(interestMessage), out);
                                 }
                             }
-                            else if (actualMessage.getMessageType() == 5) {
-                                //System.out.println("Peer " + peerID + " received Bitfield Message from " + otherPeerID);
+                        } else if (actualMessage.getMessageType() == 5) {
+                            //System.out.println("Peer " + peerID + " received Bitfield Message from " + otherPeerID);
 
-                                BitField bitField = (BitField)MessageConversion.bytesToMessage(actualMessage.getPayload().getMessage());
+                            BitField bitField = (BitField) MessageConversion.bytesToMessage(actualMessage.getPayload().getMessage());
 
-                                clientBitFields.put(bitField.getFileName(), bitField);
+                            clientBitFields.put(bitField.getFileName(), bitField);
 
-                                if(requestFlag == false) {
-                                    requestFlag = true;
-                                    Boolean flag = true;
-                                    outerloop:
-                                    for (Map.Entry mapElement : clientBitFields.entrySet()) {
-                                        String name = (String) mapElement.getKey();
-                                        BitField bitFieldClient = ((BitField) mapElement.getValue());
+                            if (requestFlag == false) {
+                                requestFlag = true;
+                                Boolean flag = true;
+                                outerloop:
+                                for (Map.Entry mapElement : clientBitFields.entrySet()) {
+                                    String name = (String) mapElement.getKey();
+                                    BitField bitFieldClient = ((BitField) mapElement.getValue());
 
-                                        if (bitFields.containsKey(name)) {
-                                            BitField bitFieldServer = bitFields.get(name);
-                                            int length = bitFieldServer.bitField.length;
-                                            for (int i = 0; i < length; i++) {
-                                                if (bitFieldServer.bitField[i] == 0 && bitFieldClient.bitField[i] == 1 && requestBitFields.get(name)[i] == 0) {
-                                                    ActualMessage interestMessage = new ActualMessage(1, 2, null);
-                                                    CommonMethods.sendMessage(MessageConversion.messageToBytes(interestMessage), out);
-                                                    flag = false;
-                                                    break outerloop;
-                                                }
+                                    if (bitFields.containsKey(name)) {
+                                        BitField bitFieldServer = bitFields.get(name);
+                                        int length = bitFieldServer.bitField.length;
+                                        for (int i = 0; i < length; i++) {
+                                            if (bitFieldServer.bitField[i] == 0 && bitFieldClient.bitField[i] == 1 && requestBitFields.get(name)[i] == 0) {
+                                                ActualMessage interestMessage = new ActualMessage(1, 2, null);
+                                                CommonMethods.sendMessage(MessageConversion.messageToBytes(interestMessage), out);
+                                                flag = false;
+                                                break outerloop;
                                             }
-                                        } else {
-                                            ActualMessage interestMessage = new ActualMessage(1, 2, null);
-                                            CommonMethods.sendMessage(MessageConversion.messageToBytes(interestMessage), out);
-                                            flag = false;
-                                            CommonMethods.prepareToReceiveFile(bitFieldClient, bitFields, files, requestBitFields);
-                                            break outerloop;
                                         }
-                                    }
-                                    if (flag) {
-                                        ActualMessage notInterestMessage = new ActualMessage(1, 3, null);
-                                        CommonMethods.sendMessage(MessageConversion.messageToBytes(notInterestMessage), out);
-                                        requestFlag = false;
-                                    }
-                                }
-
-                            }
-                            else if (actualMessage.getMessageType() == 6) {
-                                //REQUEST
-
-                                Request msg = (Request) MessageConversion.bytesToMessage(actualMessage.getPayload().getMessage());
-                                String name = msg.getFileName();
-
-                                if(!files.containsKey(name)){
-                                    CommonMethods.readActualFile(name, files, peerID);
-                                }
-
-                                int pieceNum = ByteBuffer.wrap(msg.getPieceIndex()).getInt();
-
-                                //System.out.println("Peer " + peerID + " received Request Message from " + otherPeerID + " for file: " + name + " piece: " + pieceNum);
-                                if(sendToClient) {
-                                    if (bitFields.get(name).bitField[pieceNum] == 1) {
-                                        byte[] piece = Arrays.copyOfRange(files.get(name), pieceNum * bitFields.get(name).PieceSize, pieceNum * bitFields.get(name).PieceSize + bitFields.get(name).PieceSize);
-                                        Piece pieceMsg = new Piece(name, msg.getPieceIndex(), piece);
-                                        ActualMessage interestMessage = new ActualMessage(1, 7, new PayloadMessage(MessageConversion.messageToBytes(pieceMsg)));
+                                    } else {
+                                        ActualMessage interestMessage = new ActualMessage(1, 2, null);
                                         CommonMethods.sendMessage(MessageConversion.messageToBytes(interestMessage), out);
-
-                                        if (!clientBitFields.containsKey(name)) {
-                                            BitField temp = bitFields.get(name);
-                                            BitField temp2 = new BitField(temp.FileName, temp.FileSize, temp.PieceSize, new byte[temp.getBitField().length]);
-                                            for (int i = 0; i < temp.getBitField().length; i++) {
-                                                temp2.getBitField()[i] = 0;
-                                            }
-                                            clientBitFields.put(name, temp2);
-                                        }
-                                        clientBitFields.get(name).bitField[pieceNum] = 1;
-
-                                        byte[] temp = clientBitFields.get(name).bitField;
-                                        Boolean tempFlag = true;
-                                        for (int i = 0; i < clientBitFields.get(name).bitField.length-1; i++){
-                                            if(temp[i] == 0){
-                                                tempFlag = false;
-                                            }
-                                        }
-                                        if(tempFlag) {
-                                            interestedPeers.remove(otherPeerID);
-                                        }
+                                        flag = false;
+                                        CommonMethods.prepareToReceiveFile(bitFieldClient, bitFields, files, requestBitFields);
+                                        break outerloop;
                                     }
                                 }
-                                else {
-                                    if(!interestedPeers.containsKey(otherPeerID)){
-                                        interestedPeers.put(otherPeerID, false);
+                                if (flag) {
+                                    ActualMessage notInterestMessage = new ActualMessage(1, 3, null);
+                                    CommonMethods.sendMessage(MessageConversion.messageToBytes(notInterestMessage), out);
+                                    requestFlag = false;
+                                }
+                            }
+
+                        } else if (actualMessage.getMessageType() == 6) {
+                            //REQUEST
+
+                            Request msg = (Request) MessageConversion.bytesToMessage(actualMessage.getPayload().getMessage());
+                            String name = msg.getFileName();
+
+                            if (!files.containsKey(name)) {
+                                CommonMethods.readActualFile(name, files, peerID);
+                            }
+
+                            int pieceNum = ByteBuffer.wrap(msg.getPieceIndex()).getInt();
+
+                            //System.out.println("Peer " + peerID + " received Request Message from " + otherPeerID + " for file: " + name + " piece: " + pieceNum);
+                            if (sendToClient) {
+                                if (bitFields.get(name).bitField[pieceNum] == 1) {
+                                    byte[] piece = Arrays.copyOfRange(files.get(name), pieceNum * bitFields.get(name).PieceSize, pieceNum * bitFields.get(name).PieceSize + bitFields.get(name).PieceSize);
+                                    Piece pieceMsg = new Piece(name, msg.getPieceIndex(), piece);
+                                    ActualMessage interestMessage = new ActualMessage(1, 7, new PayloadMessage(MessageConversion.messageToBytes(pieceMsg)));
+                                    CommonMethods.sendMessage(MessageConversion.messageToBytes(interestMessage), out);
+
+                                    if (!clientBitFields.containsKey(name)) {
+                                        BitField temp = bitFields.get(name);
+                                        BitField temp2 = new BitField(temp.FileName, temp.FileSize, temp.PieceSize, new byte[temp.getBitField().length]);
+                                        for (int i = 0; i < temp.getBitField().length; i++) {
+                                            temp2.getBitField()[i] = 0;
+                                        }
+                                        clientBitFields.put(name, temp2);
+                                    }
+                                    clientBitFields.get(name).bitField[pieceNum] = 1;
+
+                                    byte[] temp = clientBitFields.get(name).bitField;
+                                    Boolean tempFlag = true;
+                                    for (int i = 0; i < clientBitFields.get(name).bitField.length - 1; i++) {
+                                        if (temp[i] == 0) {
+                                            tempFlag = false;
+                                        }
+                                    }
+                                    if (tempFlag) {
+                                        interestedPeers.remove(otherPeerID);
                                     }
                                 }
+                            } else {
+                                if (!interestedPeers.containsKey(otherPeerID)) {
+                                    interestedPeers.put(otherPeerID, false);
+                                }
+                            }
+
+                        } else if (actualMessage.getMessageType() == 7) {
+                            //PIECE
+                            Piece a = (Piece) MessageConversion.bytesToMessage(actualMessage.getPayload().getMessage());
+                            int pieceNum = ByteBuffer.wrap(a.getPieceIndex()).getInt();
+                            String fname = a.getName();
+                            int count = 0;
+                            for (int i = 0; i < bitFields.get(fname).getBitField().length; i++) {
+                                if (bitFields.get(fname).getBitField()[i] == 1) {
+                                    count = count + 1;
+                                }
+                            }
+                            System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] has downloaded the piece [" + pieceNum + "] from [" + otherPeerID + "]. Now the number of pieces it has is [" + (count + 1) + "]");
+
+
+                            byte[] piece = a.getPiece();
+                            for (int i = 0; i < bitFields.get(fname).getPieceSize(); i++) {
+                                if (pieceNum * bitFields.get(fname).getPieceSize() + i < files.get(fname).length) {
+                                    files.get(fname)[pieceNum * bitFields.get(fname).getPieceSize() + i] = piece[i];
+                                }
+                            }
+                            bitFields.get(fname).getBitField()[pieceNum] = 1;
+                            connectedPeersRates.replace(otherPeerID, connectedPeersRates.get(otherPeerID) + bitFields.get(fname).getPieceSize());
+
+                            flagHave.setFlag(!flagHave.getFlag());
+
+
+                            byte[] temp = bitFields.get(fname).getBitField();
+                            Boolean tempFlag = true;
+                            for (int i = 0; i < bitFields.get(fname).getBitField().length - 1; i++) {
+                                if (temp[i] == 0) {
+                                    tempFlag = false;
+                                }
+                            }
+                            if (tempFlag) {
+                                System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] has downloaded the complete file.");
+
+
+                                Files.write(Path.of(System.getProperty("user.dir") + "/peerFolder/" + peerID + "/" + fname), files.get(fname));
 
                             }
-                            else if (actualMessage.getMessageType() == 7) {
-                                //PIECE
-                                Piece a = (Piece) MessageConversion.bytesToMessage(actualMessage.getPayload().getMessage());
-                                int pieceNum = ByteBuffer.wrap(a.getPieceIndex()).getInt();
-                                String fname = a.getName();
-                                int count = 0;
-                                for (int i = 0; i < bitFields.get(fname).getBitField().length; i++){
-                                    if(bitFields.get(fname).getBitField()[i] == 1) {
-                                        count = count + 1;
-                                    }
-                                }
-                                System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] has downloaded the piece [" + pieceNum + "] from [" + otherPeerID + "]. Now the number of pieces it has is [" + (count + 1) + "]");
-
-
-                                byte[] piece = a.getPiece();
-                                for (int i = 0; i < bitFields.get(fname).getPieceSize(); i++) {
-                                    if(pieceNum*bitFields.get(fname).getPieceSize() + i < files.get(fname).length) {
-                                        files.get(fname)[pieceNum * bitFields.get(fname).getPieceSize() + i] = piece[i];
-                                    }
-                                }
-                                bitFields.get(fname).getBitField()[pieceNum] = 1;
-                                connectedPeersRates.replace(otherPeerID, connectedPeersRates.get(otherPeerID) + bitFields.get(fname).getPieceSize());
-
-                                flagHave.setFlag(!flagHave.getFlag());
-
-
-
-                                byte[] temp = bitFields.get(fname).getBitField();
-                                Boolean tempFlag = true;
-                                for (int i = 0; i < bitFields.get(fname).getBitField().length-1; i++){
-                                    if(temp[i] == 0){
-                                        tempFlag = false;
-                                    }
-                                }
-                                if(tempFlag) {
-                                    System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] has downloaded the complete file.");
-
-
-                                    Files.write(Path.of(System.getProperty("user.dir") + "/peerFolder/" + peerID + "/" + fname), files.get(fname));
-
-                                }
-                                CommonMethods.requestPiece(requestFromClient, bitFields, clientBitFields, requestBitFields, files, out);
-                            }
+                            CommonMethods.requestPiece(requestFromClient, bitFields, clientBitFields, requestBitFields, files, out);
                         }
                     }
                 }
-                catch(ClassNotFoundException classnot){
-                    System.out.println("Server Error 2 " + classnot.toString());
-                }
-            }
-            catch(IOException ioException){
+            } catch (ClassNotFoundException classnot) {
+                System.out.println("Server Error 2 " + classnot.toString());
+            } catch (IOException ioException) {
                 System.out.println("Disconnect with Client " + no);
-            }
-            finally{
+            } finally {
                 //Close connections
-                try{
+                try {
                     in.close();
                     out.close();
                     connection.close();
-                }
-                catch(IOException ioException){
+                } catch (IOException ioException) {
                     System.out.println("Disconnect with Client " + no);
                 }
             }
+
+
         }
 
     }
-
 }

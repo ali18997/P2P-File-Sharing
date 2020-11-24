@@ -40,32 +40,19 @@ public class Client {
         this.interestedPeers = interestedPeers;
         this.otherPeerHostName = otherPeerHostName;
 
-        FlagObserverHave observerHave = new FlagObserverHave();
-        FlagObserverNeighbours observerNeighbours = new FlagObserverNeighbours();
-        flagHave.addObserver(observerHave);
-        flagNeighbours.addObserver(observerNeighbours);
         requestSocket = new Socket(this.otherPeerHostName, otherPeerPort);
-
         out = new ObjectOutputStream(requestSocket.getOutputStream());
         out.flush();
         in = new ObjectInputStream(requestSocket.getInputStream());
+
+        FlagObserverHave observerHave = new FlagObserverHave(bitFields, serverBitFields, haveBitFields, out);
+        FlagObserverNeighbours observerNeighbours = new FlagObserverNeighbours();
+        flagHave.addObserver(observerHave);
+        flagNeighbours.addObserver(observerNeighbours);
+
+
         CommonMethods.prepareBitFields(peerID, PieceSize, bitFields);
         new MessageReceiving().start();
-    }
-
-    public void handShake() throws IOException {
-        HandshakeMessage handshakeMessage = new HandshakeMessage(otherPeerID);
-        CommonMethods.sendMessage(MessageConversion.messageToBytes(handshakeMessage), out);
-    }
-
-
-    public class FlagObserverHave implements Observer {
-
-        public FlagObserverHave() {}
-
-        public void update(Observable obj, Object arg) {
-            CommonMethods.haveDetect(bitFields, serverBitFields, haveBitFields, out);
-        }
     }
 
     public class FlagObserverNeighbours implements Observer {
@@ -77,7 +64,10 @@ public class Client {
         }
     }
 
-
+    public void handShake() throws IOException {
+        HandshakeMessage handshakeMessage = new HandshakeMessage(otherPeerID);
+        CommonMethods.sendMessage(MessageConversion.messageToBytes(handshakeMessage), out);
+    }
 
     public String getMessage() throws IOException, ClassNotFoundException {
         String MESSAGE = (String)in.readObject();
