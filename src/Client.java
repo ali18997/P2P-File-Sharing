@@ -4,14 +4,11 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 public class Client {
     public Socket requestSocket;           //socket connect to the server
     public ObjectOutputStream out;         //stream write to the socket
     public ObjectInputStream in;          //stream read from the socket
-    //public int clientPort;
-    //public int serverPort;
     private Boolean requestFlag = false;
     private int PieceSize;
     private FlagObservable flag;
@@ -19,7 +16,6 @@ public class Client {
     private int peerID;
     private int otherPeerID;
     private String otherPeerHostName;
-    private int otherPeerPort;
 
     private HashMap<String, BitField> bitFields;
     private HashMap<String, byte[]> files;
@@ -43,7 +39,6 @@ public class Client {
         this.connectedPeersRates = connectedPeersRates;
         this.interestedPeers = interestedPeers;
         this.otherPeerHostName = otherPeerHostName;
-        this.otherPeerPort = otherPeerPort;
 
         FlagObserver observer = new FlagObserver();
         FlagObserver2 observer2 = new FlagObserver2();
@@ -58,24 +53,6 @@ public class Client {
         new MessageReceiving().start();
     }
 
-    private void sendHave(int i, BitField bitFieldClient) {
-
-        byte[] pieceIndex = ByteBuffer.allocate(4).putInt(i).array();
-        Have haveMsg = new Have(bitFieldClient.FileName, pieceIndex, new BitField(bitFieldClient.FileName, bitFieldClient.FileSize, bitFieldClient.PieceSize, new byte[bitFieldClient.getBitField().length]));
-        for (int j = 0; j < haveMsg.getBitField().bitField.length; j++) {
-            haveMsg.getBitField().bitField[j] = 0;
-        }
-        try {
-            PayloadMessage pieceHave = new PayloadMessage(MessageConversion.messageToBytes(haveMsg));
-            ActualMessage haveMessage = new ActualMessage(1, 4, pieceHave);
-            sendMessage(MessageConversion.messageToBytes(haveMessage));
-            haveBitFields.get(bitFieldClient.FileName)[i] = 1;
-        } catch (IOException e) {
-            System.out.println("Client Error 1 " + e.toString());
-        }
-
-    }
-
     private void redundantRequests(){
         for (Map.Entry mapElement : bitFields.entrySet()) {
             String name = (String)mapElement.getKey();
@@ -87,6 +64,11 @@ public class Client {
                 }
             }
         }
+    }
+
+    public void handShake() throws IOException {
+        HandshakeMessage handshakeMessage = new HandshakeMessage(otherPeerID);
+        CommonMethods.sendMessage(MessageConversion.messageToBytes(handshakeMessage), out);
     }
 
     public class FlagObserver implements Observer {
@@ -105,7 +87,7 @@ public class Client {
                     for (int i = 0; i < length; i++) {
                         if (haveBitFields.containsKey(name)) {
                             if (bitFieldServer.bitField[i] == 0 && bitFieldClient.bitField[i] == 1 && haveBitFields.get(name)[i] == 0) {
-                                sendHave(i, bitFieldClient);
+                                CommonMethods.sendHave(i, bitFieldClient, haveBitFields, out);
                             }
                         }
                     }
@@ -123,7 +105,7 @@ public class Client {
                     int length = bitFieldServer.bitField.length;
                     for (int i = 0; i < length; i++) {
                         if (bitFieldServer.bitField[i] == 0 && bitFieldClient.bitField[i] == 1 && haveBitFields.get(name)[i] == 0) {
-                            sendHave(i, bitFieldClient);
+                            CommonMethods.sendHave(i, bitFieldClient, haveBitFields, out);
                         }
                     }
                 }
@@ -144,7 +126,7 @@ public class Client {
                     ActualMessage unchokeMessage = new ActualMessage(1, 1, null);
                     try {
                         sendToServer = true;
-                        sendMessage(MessageConversion.messageToBytes(unchokeMessage));
+                        CommonMethods.sendMessage(MessageConversion.messageToBytes(unchokeMessage), out);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -153,7 +135,7 @@ public class Client {
                     ActualMessage chokeMessage = new ActualMessage(1, 0, null);
                     try {
                         sendToServer = false;
-                        sendMessage(MessageConversion.messageToBytes(chokeMessage));
+                        CommonMethods.sendMessage(MessageConversion.messageToBytes(chokeMessage), out);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -185,13 +167,6 @@ public class Client {
                 }
                 BitField bitField = new BitField(fileName, fsize, PieceSize, bitFieldArr);
                 this.bitFields.put(fileName, bitField);
-        }
-    }
-
-    public void sendMessage(byte[] msg) throws IOException {
-        synchronized (out) {
-            out.writeObject(msg);
-            out.flush();
         }
     }
 
@@ -236,7 +211,7 @@ public class Client {
                             Request request = new Request(name, pieceIndex);
                             PayloadMessage pieceRequest = new PayloadMessage(MessageConversion.messageToBytes(request));
                             ActualMessage requestMessage = new ActualMessage(1, 6, pieceRequest);
-                            sendMessage(MessageConversion.messageToBytes(requestMessage));
+                            CommonMethods.sendMessage(MessageConversion.messageToBytes(requestMessage), out);
                             break outerloop;
                         }
                     }
@@ -247,7 +222,7 @@ public class Client {
                     Request request = new Request(name, pieceIndex);
                     PayloadMessage pieceRequest = new PayloadMessage(MessageConversion.messageToBytes(request));
                     ActualMessage requestMessage = new ActualMessage(1, 6, pieceRequest);
-                    sendMessage(MessageConversion.messageToBytes(requestMessage));
+                    CommonMethods.sendMessage(MessageConversion.messageToBytes(requestMessage), out);
                     break outerloop;
                 }
             }
@@ -267,7 +242,7 @@ public class Client {
                                     System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] makes a connection to Peer [" + otherPeerID + "]");
                                     HandshakeMessage handshakeMessageBack = new HandshakeMessage(peerID);
                                     try {
-                                        sendMessage(MessageConversion.messageToBytes(handshakeMessageBack));
+                                        CommonMethods.sendMessage(MessageConversion.messageToBytes(handshakeMessageBack), out);
                                         connectedPeersRates.put(otherPeerID, 0);
                                     } catch (IOException e) {
                                         System.out.println("Client Error 4 " + e.toString());
@@ -282,7 +257,7 @@ public class Client {
                                             System.out.println("Client Error 41 " + e.toString());
                                         }
                                         try {
-                                            sendMessage(MessageConversion.messageToBytes(bitFieldMessage));
+                                            CommonMethods.sendMessage(MessageConversion.messageToBytes(bitFieldMessage), out);
                                         } catch (IOException e) {
                                             System.out.println("Client Error 5 " + e.toString());
                                         }
@@ -350,7 +325,7 @@ public class Client {
                                                 if(bitFields.get(name).getBitField()[pieceNum] == 0) {
                                                     ActualMessage interestMessage = new ActualMessage(1, 2, null);
                                                     try {
-                                                        sendMessage(MessageConversion.messageToBytes(interestMessage));
+                                                        CommonMethods.sendMessage(MessageConversion.messageToBytes(interestMessage), out);
                                                     } catch (IOException e) {
                                                         e.printStackTrace();
                                                     }
@@ -359,7 +334,7 @@ public class Client {
                                             else{
                                                 ActualMessage interestMessage = new ActualMessage(1, 2, null);
                                                 try {
-                                                    sendMessage(MessageConversion.messageToBytes(interestMessage));
+                                                    CommonMethods.sendMessage(MessageConversion.messageToBytes(interestMessage), out);
                                                 } catch (IOException e) {
                                                     e.printStackTrace();
                                                 }
@@ -403,7 +378,7 @@ public class Client {
                                                     if (bitFieldClient.bitField[i] == 0 && bitFieldServer.bitField[i] == 1 && requestBitFields.get(name)[i] == 0) {
                                                         ActualMessage interestMessage = new ActualMessage(1, 2, null);
                                                         try {
-                                                            sendMessage(MessageConversion.messageToBytes(interestMessage));
+                                                            CommonMethods.sendMessage(MessageConversion.messageToBytes(interestMessage), out);
                                                         } catch (IOException e) {
                                                             System.out.println("Client Error 13 " + e.toString());
                                                         }
@@ -414,7 +389,7 @@ public class Client {
                                             } else {
                                                 ActualMessage interestMessage = new ActualMessage(1, 2, null);
                                                 try {
-                                                    sendMessage(MessageConversion.messageToBytes(interestMessage));
+                                                    CommonMethods.sendMessage(MessageConversion.messageToBytes(interestMessage), out);
                                                 } catch (IOException e) {
                                                     System.out.println("Client Error 14 " + e.toString());
                                                 }
@@ -426,7 +401,7 @@ public class Client {
                                         if (flag) {
                                             ActualMessage notInterestMessage = new ActualMessage(1, 3, null);
                                             try {
-                                                sendMessage(MessageConversion.messageToBytes(notInterestMessage));
+                                                CommonMethods.sendMessage(MessageConversion.messageToBytes(notInterestMessage), out);
                                             } catch (IOException e) {
                                                 System.out.println("Client Error 15 " + e.toString());
                                             }
@@ -471,7 +446,7 @@ public class Client {
                                                 System.out.println("Client Error 19 " + e.toString());
                                             }
                                             try {
-                                                sendMessage(MessageConversion.messageToBytes(interestMessage));
+                                                CommonMethods.sendMessage(MessageConversion.messageToBytes(interestMessage), out);
                                             } catch (IOException e) {
                                                 System.out.println("Client Error 20 " + e.toString());
                                             }

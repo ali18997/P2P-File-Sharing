@@ -58,24 +58,6 @@ public class ServerFurther {
             prepareBitFields();
         }
 
-        private void sendHave(int i, BitField bitFieldServer) {
-
-            byte[] pieceIndex = ByteBuffer.allocate(4).putInt(i).array();
-            Have haveMsg = new Have(bitFieldServer.FileName, pieceIndex, new BitField(bitFieldServer.FileName, bitFieldServer.FileSize, bitFieldServer.PieceSize, new byte[bitFieldServer.getBitField().length]));
-            for (int j = 0; j < haveMsg.getBitField().bitField.length; j++) {
-                haveMsg.getBitField().bitField[j] = 0;
-            }
-            try {
-                PayloadMessage pieceHave = new PayloadMessage(MessageConversion.messageToBytes(haveMsg));
-                ActualMessage haveMessage = new ActualMessage(1, 4, pieceHave);
-                sendMessage(MessageConversion.messageToBytes(haveMessage));
-                haveBitFields.get(bitFieldServer.FileName)[i] = 1;
-            } catch (IOException e) {
-                System.out.println("Server Error 1 " + e.toString());
-            }
-
-        }
-
         private void redundantRequests(){
             for (Map.Entry mapElement : bitFields.entrySet()) {
                 String name = (String)mapElement.getKey();
@@ -105,7 +87,7 @@ public class ServerFurther {
                         for (int i = 0; i < length; i++) {
                             if (haveBitFields.containsKey(name)) {
                                 if (bitFieldClient.bitField[i] == 0 && bitFieldServer.bitField[i] == 1 && haveBitFields.get(name)[i] == 0) {
-                                    sendHave(i, bitFieldServer);
+                                    CommonMethods.sendHave(i, bitFieldServer, haveBitFields, out);
                                 }
                             }
                         }
@@ -123,7 +105,7 @@ public class ServerFurther {
                         int length = bitFieldClient.bitField.length;
                         for (int i = 0; i < length; i++) {
                             if (bitFieldClient.bitField[i] == 0 && bitFieldServer.bitField[i] == 1 && haveBitFields.get(name)[i] == 0) {
-                                sendHave(i, bitFieldServer);
+                                CommonMethods.sendHave(i, bitFieldServer, haveBitFields, out);
                             }
                         }
                     }

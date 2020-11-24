@@ -40,7 +40,6 @@ public class Server {
         }
 
         public void run() {
-            //System.out.println("The server is running.");
             ServerSocket listener = null;
             try {
                 listener = new ServerSocket(sPort);
@@ -55,7 +54,6 @@ public class Server {
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                    //System.out.println("Client "  + clientNum + " is connected!");
                     clientNum++;
                 }
             } finally {

@@ -107,17 +107,12 @@ public class Peer {
 
     public void connectToPeer(int otherPeerID, String otherPeerHostName, int otherPeerPort) throws IOException {
         Client temp = new Client(otherPeerID, otherPeerHostName, otherPeerPort, this.peerID, requestBitFields, bitFields, files, PieceSize, flag, flag2, connectedPeersRates, interestedPeers);
-        clients.put(otherPeerPort, temp);
-        handShakePeer(otherPeerPort);
+        clients.put(otherPeerID, temp);
+        handShakePeer(otherPeerID);
     }
 
-    public void handShakePeer(int port) throws IOException {
-        HandshakeMessage handshakeMessage = new HandshakeMessage(peerPort);
-        clients.get(port).sendMessage(MessageConversion.messageToBytes(handshakeMessage));
-    }
-
-    public void messageToPeer(int port, String msg) throws IOException {
-        clients.get(port).sendMessage(msg.getBytes());
+    public void handShakePeer(int otherPeerID) throws IOException {
+        clients.get(otherPeerID).handShake();
     }
 
     public void disconnectPeer(int port) throws IOException {
