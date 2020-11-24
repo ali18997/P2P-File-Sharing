@@ -44,7 +44,7 @@ public class ActualMessageProcessor {
         this.out = out;
 
         FlagObserverHave observerHave = new FlagObserverHave(bitFields, otherPeerBitFields, haveBitFields, out);
-        FlagObserverNeighbours observerNeighbours = new FlagObserverNeighbours();
+        FlagObserverNeighbours observerNeighbours = new FlagObserverNeighbours(this);
         flagHave.addObserver(observerHave);
         flagNeighbours.addObserver(observerNeighbours);
         CommonMethods.prepareBitFields(peerID, PieceSize, bitFields);
@@ -228,13 +228,9 @@ public class ActualMessageProcessor {
         }
     }
 
-    public class FlagObserverNeighbours implements Observer {
-
-        public FlagObserverNeighbours() {
-        }
-
-        public void update(Observable obj, Object arg) {
-            sendToOtherPeer = CommonMethods.updateNeighbours(otherPeerID, interestedPeers, sendToOtherPeer, out);
-        }
+    public void updateNeighbours(){
+        sendToOtherPeer = CommonMethods.updateNeighbours(otherPeerID, interestedPeers, sendToOtherPeer, out);
     }
+
+
 }
