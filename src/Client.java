@@ -53,19 +53,6 @@ public class Client {
         new MessageReceiving().start();
     }
 
-    private void redundantRequests(){
-        for (Map.Entry mapElement : bitFields.entrySet()) {
-            String name = (String)mapElement.getKey();
-            byte[] bitField = ((BitField)mapElement.getValue()).getBitField();
-            byte[] bitField1 = requestBitFields.get(name);
-            for (int i = 0; i < bitField.length; i++){
-                if(bitField[i] == 0){
-                    bitField1[i] = 0;
-                }
-            }
-        }
-    }
-
     public void handShake() throws IOException {
         HandshakeMessage handshakeMessage = new HandshakeMessage(otherPeerID);
         CommonMethods.sendMessage(MessageConversion.messageToBytes(handshakeMessage), out);
@@ -271,7 +258,7 @@ public class Client {
                                     //CHOKE
                                     System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] is choked by [" + otherPeerID + "]");
                                     requestFromServer = false;
-                                    redundantRequests();
+                                    CommonMethods.redundantRequests(bitFields, haveBitFields);
                                 }
                                 else if (actualMessage.getMessageType() == 1) {
                                     //UNCHOKE

@@ -5,7 +5,6 @@ import java.nio.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 public class ServerFurther {
 
@@ -56,19 +55,6 @@ public class ServerFurther {
             flag.addObserver(observer);
             flag2.addObserver(observer2);
             prepareBitFields();
-        }
-
-        private void redundantRequests(){
-            for (Map.Entry mapElement : bitFields.entrySet()) {
-                String name = (String)mapElement.getKey();
-                byte[] bitField = ((BitField)mapElement.getValue()).getBitField();
-                byte[] bitField1 = requestBitFields.get(name);
-                for (int i = 0; i < bitField.length; i++){
-                    if(bitField[i] == 0){
-                        bitField1[i] = 0;
-                    }
-                }
-            }
         }
 
         public class FlagObserver implements Observer {
@@ -254,7 +240,7 @@ public class ServerFurther {
                                 //CHOKE
                                 System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] is choked by [" + otherPeerID + "]");
                                 requestFromClient = false;
-                                redundantRequests();
+                                CommonMethods.redundantRequests(bitFields, requestBitFields);
 
                             }
                             else if (actualMessage.getMessageType() == 1) {
