@@ -244,15 +244,7 @@ public class ServerFurther {
                 out.flush();
                 in = new ObjectInputStream(connection.getInputStream());
                 try{
-                    while(true)
-                    {
-                        try {
-                            Random rand = new Random();
-                            TimeUnit.MILLISECONDS.sleep(rand.nextInt(1));
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        //checkNewPieces();
+                    while(true) {
                         Object receivedMsg = MessageConversion.bytesToMessage((byte[]) in.readObject());
                         if (receivedMsg instanceof HandshakeMessage) {
                             HandshakeMessage handshakeMessage = (HandshakeMessage) receivedMsg;
@@ -492,8 +484,10 @@ public class ServerFurther {
         public void sendMessage(byte[] msg)
         {
             try{
-                out.writeObject(msg);
-                out.flush();
+                synchronized (out) {
+                    out.writeObject(msg);
+                    out.flush();
+                }
                 //System.out.println("Send message: " + msg + " to Client " + no);
             }
             catch(IOException ioException){

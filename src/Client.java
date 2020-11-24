@@ -189,8 +189,10 @@ public class Client {
     }
 
     public void sendMessage(byte[] msg) throws IOException {
-        out.writeObject(msg);
-        out.flush();
+        synchronized (out) {
+            out.writeObject(msg);
+            out.flush();
+        }
     }
 
     public String getMessage() throws IOException, ClassNotFoundException {
@@ -256,12 +258,6 @@ public class Client {
         public void run() {
 
                     while (true) {
-                        try {
-                            Random rand = new Random();
-                            TimeUnit.MILLISECONDS.sleep(rand.nextInt(1));
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
                         Object receivedMsg = null;
                         try {
                             receivedMsg = MessageConversion.bytesToMessage((byte[]) in.readObject());
