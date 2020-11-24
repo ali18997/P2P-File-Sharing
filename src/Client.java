@@ -64,37 +64,38 @@ public class Client {
         public FlagObserver() {}
 
         public void update(Observable obj, Object arg) {
-
             CommonMethods.haveDetect(bitFields, serverBitFields, haveBitFields, out);
-
         }
     }
 
     public class FlagObserver2 implements Observer {
 
-        public FlagObserver2() {
-        }
+        public FlagObserver2() {}
 
         public void update(Observable obj, Object arg) {
-            if(interestedPeers.containsKey(otherPeerID)) {
-                if (sendToServer == false && interestedPeers.get(otherPeerID) == true) {
-                    //UNCHOKE
-                    ActualMessage unchokeMessage = new ActualMessage(1, 1, null);
-                    try {
-                        sendToServer = true;
-                        CommonMethods.sendMessage(MessageConversion.messageToBytes(unchokeMessage), out);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                } else if (sendToServer == true && interestedPeers.get(otherPeerID) == false) {
-                    //CHOKE
-                    ActualMessage chokeMessage = new ActualMessage(1, 0, null);
-                    try {
-                        sendToServer = false;
-                        CommonMethods.sendMessage(MessageConversion.messageToBytes(chokeMessage), out);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+            updateNeighbours();
+        }
+    }
+
+    public void updateNeighbours() {
+        if(interestedPeers.containsKey(otherPeerID)) {
+            if (sendToServer == false && interestedPeers.get(otherPeerID) == true) {
+                //UNCHOKE
+                ActualMessage unchokeMessage = new ActualMessage(1, 1, null);
+                try {
+                    sendToServer = true;
+                    CommonMethods.sendMessage(MessageConversion.messageToBytes(unchokeMessage), out);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            } else if (sendToServer == true && interestedPeers.get(otherPeerID) == false) {
+                //CHOKE
+                ActualMessage chokeMessage = new ActualMessage(1, 0, null);
+                try {
+                    sendToServer = false;
+                    CommonMethods.sendMessage(MessageConversion.messageToBytes(chokeMessage), out);
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
         }
