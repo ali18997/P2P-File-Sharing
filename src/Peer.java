@@ -27,16 +27,56 @@ public class Peer {
     FlagObservable flag = new FlagObservable(true);
     FlagObservable flag2 = new FlagObservable(true);
 
-    public Peer(int peerID, int port) throws IOException {
-        peerPort = port;
+    public Peer(int peerID) throws IOException {
         this.peerID = peerID;
         readCommon();
-
+        readPeerInfo1();
+        readPeerInfo2();
 
         server = new Server(this.peerID, peerPort, requestBitFields, bitFields, files, PieceSize, flag, flag2, connectedPeersRates, interestedPeers);
         Timer timer = new Timer();
         timer.schedule(new preferredNeighbours(), 0, p*1000);
         timer.schedule(new optimisticallyUnchokedNeighbor(), 0, m*1000);
+    }
+
+    public void readPeerInfo1() throws IOException {
+        BufferedReader reader;
+        try {
+            reader = new BufferedReader(new FileReader("PeerInfo.cfg"));
+            String line = reader.readLine();
+            while (line != null) {
+                String[] splitted = line.split(" ");
+                if(Integer.parseInt(splitted[0]) == peerID){
+                    peerPort = Integer.parseInt(splitted[2]);
+                }
+                line = reader.readLine();
+            }
+            reader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void readPeerInfo2() throws IOException {
+        BufferedReader reader;
+        try {
+            reader = new BufferedReader(new FileReader("PeerInfo.cfg"));
+            String line = reader.readLine();
+            while (line != null) {
+                String[] splitted = line.split(" ");
+                if(Integer.parseInt(splitted[0]) == peerID){
+                    break;
+                }
+                else {
+                    connectToPeer(Integer.parseInt(splitted[0]), splitted[1], Integer.parseInt(splitted[2]));
+                    System.out.println(peerID + " " + splitted[0]);
+                }
+                line = reader.readLine();
+            }
+            reader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void readCommon() throws IOException {
