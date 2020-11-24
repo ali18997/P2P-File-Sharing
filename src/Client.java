@@ -131,16 +131,6 @@ public class Client {
         }
     }
 
-    public void readActualFile(String name) throws IOException {
-        final File folder = new File(System.getProperty("user.dir") + "/peerFolder/" + peerID);
-        for (final File fileEntry : folder.listFiles()) {
-            if (name.equals(fileEntry.getName())) {
-                byte[] bytes = Files.readAllBytes(fileEntry.toPath());
-                files.put(name, bytes);
-            }
-        }
-    }
-
     public void prepareBitFields() throws IOException {
         final File folder = new File(System.getProperty("user.dir") + "/peerFolder/" + peerID);
         if (!folder.exists()){folder.mkdir();}
@@ -413,7 +403,7 @@ public class Client {
 
                                     if(!files.containsKey(name)){
                                         try {
-                                            readActualFile(name);
+                                            CommonMethods.readActualFile(name, files, peerID);
                                         } catch (IOException e) {
                                             System.out.println("Client Error 18 " + e.toString());
                                         }

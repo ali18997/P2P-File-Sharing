@@ -1,6 +1,8 @@
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -47,6 +49,18 @@ public class CommonMethods {
             }
         }
     }
+
+    public static void readActualFile(String name, HashMap<String, byte[]> files, int peerID) throws IOException {
+        final File folder = new File(System.getProperty("user.dir") + "/peerFolder/" + peerID);
+        for (final File fileEntry : folder.listFiles()) {
+            if (name.equals(fileEntry.getName())) {
+                byte[] bytes = Files.readAllBytes(fileEntry.toPath());
+                files.put(name, bytes);
+            }
+        }
+    }
+
+
 
 
 }

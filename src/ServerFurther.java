@@ -130,16 +130,6 @@ public class ServerFurther {
             }
         }
 
-        public void readActualFile(String name) throws IOException {
-            final File folder = new File(System.getProperty("user.dir") + "/peerFolder/" + peerID);
-            for (final File fileEntry : folder.listFiles()) {
-                if (name.equals(fileEntry.getName())) {
-                    byte[] bytes = Files.readAllBytes(fileEntry.toPath());
-                    files.put(name, bytes);
-                }
-            }
-        }
-
         public void prepareBitFields() throws IOException {
             final File folder = new File(System.getProperty("user.dir") + "/peerFolder/" + peerID);
             if (!folder.exists()){folder.mkdir();}
@@ -257,9 +247,6 @@ public class ServerFurther {
                             }
                             else if (actualMessage.getMessageType() == 3) {
                                 System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] received the \"not interested\" message from [" + otherPeerID + "]");
-                                //if (interestedPeers.containsKey(otherPeerID)){
-                                //    interestedPeers.remove(otherPeerID);
-                                //}
                             }
                             else if (actualMessage.getMessageType() == 4) {
                                 //HAVE
@@ -340,7 +327,7 @@ public class ServerFurther {
                                 String name = msg.getFileName();
 
                                 if(!files.containsKey(name)){
-                                    readActualFile(name);
+                                    CommonMethods.readActualFile(name, files, peerID);
                                 }
 
                                 int pieceNum = ByteBuffer.wrap(msg.getPieceIndex()).getInt();
