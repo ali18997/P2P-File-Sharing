@@ -219,7 +219,6 @@ public class Client {
 
     public void requestPiece() throws IOException {
         if(requestFromServer) {
-            Boolean flag = true;
             outerloop:
             for (Map.Entry mapElement : serverBitFields.entrySet()) {
                 String name = (String) mapElement.getKey();
@@ -236,7 +235,6 @@ public class Client {
                             PayloadMessage pieceRequest = new PayloadMessage(MessageConversion.messageToBytes(request));
                             ActualMessage requestMessage = new ActualMessage(1, 6, pieceRequest);
                             sendMessage(MessageConversion.messageToBytes(requestMessage));
-                            flag = false;
                             break outerloop;
                         }
                     }
@@ -248,14 +246,8 @@ public class Client {
                     PayloadMessage pieceRequest = new PayloadMessage(MessageConversion.messageToBytes(request));
                     ActualMessage requestMessage = new ActualMessage(1, 6, pieceRequest);
                     sendMessage(MessageConversion.messageToBytes(requestMessage));
-                    flag = false;
                     break outerloop;
                 }
-            }
-            if(flag){
-                ActualMessage notInterestMessage = new ActualMessage(1, 3, null);
-                sendMessage(MessageConversion.messageToBytes(notInterestMessage));
-                requestFlag = false;
             }
         }
     }
@@ -266,7 +258,7 @@ public class Client {
                     while (true) {
                         try {
                             Random rand = new Random();
-                            TimeUnit.MILLISECONDS.sleep(rand.nextInt(500));
+                            TimeUnit.MILLISECONDS.sleep(rand.nextInt(1));
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }

@@ -204,7 +204,6 @@ public class ServerFurther {
 
         public void requestPiece() throws IOException {
             if(requestFromClient) {
-                Boolean flag = true;
                 outerloop:
                 for (Map.Entry mapElement : clientBitFields.entrySet()) {
                     String name = (String) mapElement.getKey();
@@ -221,7 +220,6 @@ public class ServerFurther {
                                 PayloadMessage pieceRequest = new PayloadMessage(MessageConversion.messageToBytes(request));
                                 ActualMessage requestMessage = new ActualMessage(1, 6, pieceRequest);
                                 sendMessage(MessageConversion.messageToBytes(requestMessage));
-                                flag = false;
                                 break outerloop;
                             }
                         }
@@ -233,14 +231,8 @@ public class ServerFurther {
                         PayloadMessage pieceRequest = new PayloadMessage(MessageConversion.messageToBytes(request));
                         ActualMessage requestMessage = new ActualMessage(1, 6, pieceRequest);
                         sendMessage(MessageConversion.messageToBytes(requestMessage));
-                        flag = false;
                         break outerloop;
                     }
-                }
-                if(flag){
-                    ActualMessage notInterestMessage = new ActualMessage(1, 3, null);
-                    sendMessage(MessageConversion.messageToBytes(notInterestMessage));
-                    requestFlag = false;
                 }
             }
         }
@@ -256,7 +248,7 @@ public class ServerFurther {
                     {
                         try {
                             Random rand = new Random();
-                            TimeUnit.MILLISECONDS.sleep(rand.nextInt(500));
+                            TimeUnit.MILLISECONDS.sleep(rand.nextInt(1));
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
