@@ -98,20 +98,6 @@ public class ServerFurther {
             }
         }
 
-
-        public void prepareToReceiveFile(BitField bitField){
-            BitField temp = new BitField(bitField.getFileName(), bitField.getFileSize(), bitField.getPieceSize(), new byte[bitField.getBitField().length]);
-            byte[] temp3 = new byte[bitField.getBitField().length];
-            for (int i = 0; i < temp.getBitField().length; i++) {
-                temp.getBitField()[i] = 0;
-                temp3[i] = 0;
-            }
-            byte[] temp2 = new byte[temp.getFileSize()];
-            bitFields.put(bitField.getFileName(), temp);
-            files.put(bitField.getFileName(), temp2);
-            requestBitFields.put(bitField.getFileName(), temp3);
-        }
-
         public void requestPiece() throws IOException {
             if(requestFromClient) {
                 outerloop:
@@ -134,7 +120,7 @@ public class ServerFurther {
                             }
                         }
                     } else {
-                        prepareToReceiveFile(bitFieldClient);
+                        CommonMethods.prepareToReceiveFile(bitFieldClient, bitFields, files, requestBitFields);
 
                         byte[] pieceIndex = ByteBuffer.allocate(4).putInt(0).array();
                         Request request = new Request(name, pieceIndex);
@@ -260,7 +246,7 @@ public class ServerFurther {
                                             ActualMessage interestMessage = new ActualMessage(1, 2, null);
                                             CommonMethods.sendMessage(MessageConversion.messageToBytes(interestMessage), out);
                                             flag = false;
-                                            prepareToReceiveFile(bitFieldClient);
+                                            CommonMethods.prepareToReceiveFile(bitFieldClient, bitFields, files, requestBitFields);
                                             break outerloop;
                                         }
                                     }

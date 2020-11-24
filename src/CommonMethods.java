@@ -112,6 +112,19 @@ public class CommonMethods {
         }
     }
 
+    public static void prepareToReceiveFile(BitField bitField, HashMap<String, BitField> bitFields, HashMap<String, byte[]> files, HashMap<String, byte[]> requestBitFields){
+        BitField temp = new BitField(bitField.getFileName(), bitField.getFileSize(), bitField.getPieceSize(), new byte[bitField.getBitField().length]);
+        byte[] temp3 = new byte[bitField.getBitField().length];
+        for (int i = 0; i < temp.getBitField().length; i++) {
+            temp.getBitField()[i] = 0;
+            temp3[i] = 0;
+        }
+        byte[] temp2 = new byte[temp.getFileSize()];
+        bitFields.put(bitField.getFileName(), temp);
+        files.put(bitField.getFileName(), temp2);
+        requestBitFields.put(bitField.getFileName(), temp3);
+    }
+
 
 
 

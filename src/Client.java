@@ -111,19 +111,6 @@ public class Client {
         requestSocket.close();
     }
 
-    public void prepareToReceiveFile(BitField bitField){
-        BitField temp = new BitField(bitField.getFileName(), bitField.getFileSize(), bitField.getPieceSize(), new byte[bitField.getBitField().length]);
-        byte[] temp3 = new byte[bitField.getBitField().length];
-        for (int i = 0; i < temp.getBitField().length; i++) {
-            temp.getBitField()[i] = 0;
-            temp3[i] = 0;
-        }
-        byte[] temp2 = new byte[temp.getFileSize()];
-        bitFields.put(bitField.getFileName(), temp);
-        files.put(bitField.getFileName(), temp2);
-        requestBitFields.put(bitField.getFileName(), temp3);
-    }
-
     public void requestPiece() throws IOException {
         if(requestFromServer) {
             outerloop:
@@ -146,7 +133,7 @@ public class Client {
                         }
                     }
                 } else {
-                    prepareToReceiveFile(bitFieldServer);
+                    CommonMethods.prepareToReceiveFile(bitFieldServer, bitFields, files, requestBitFields);
 
                     byte[] pieceIndex = ByteBuffer.allocate(4).putInt(0).array();
                     Request request = new Request(name, pieceIndex);
@@ -324,7 +311,7 @@ public class Client {
                                                     System.out.println("Client Error 14 " + e.toString());
                                                 }
                                                 flag = false;
-                                                prepareToReceiveFile(bitFieldServer);
+                                                CommonMethods.prepareToReceiveFile(bitFieldServer, bitFields, files, requestBitFields);
                                                 break outerloop;
                                             }
                                         }
