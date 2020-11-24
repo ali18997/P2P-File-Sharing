@@ -112,7 +112,7 @@ public class ServerFurther {
                         ActualMessage unchokeMessage = new ActualMessage(1, 1, null);
                         try {
                             sendToClient = true;
-                            sendMessage(MessageConversion.messageToBytes(unchokeMessage));
+                            CommonMethods.sendMessage(MessageConversion.messageToBytes(unchokeMessage), out);
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -121,7 +121,7 @@ public class ServerFurther {
                         ActualMessage chokeMessage = new ActualMessage(1, 0, null);
                         try {
                             sendToClient = false;
-                            sendMessage(MessageConversion.messageToBytes(chokeMessage));
+                            CommonMethods.sendMessage(MessageConversion.messageToBytes(chokeMessage), out);
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -177,7 +177,7 @@ public class ServerFurther {
                                 Request request = new Request(name, pieceIndex);
                                 PayloadMessage pieceRequest = new PayloadMessage(MessageConversion.messageToBytes(request));
                                 ActualMessage requestMessage = new ActualMessage(1, 6, pieceRequest);
-                                sendMessage(MessageConversion.messageToBytes(requestMessage));
+                                CommonMethods.sendMessage(MessageConversion.messageToBytes(requestMessage), out);
                                 break outerloop;
                             }
                         }
@@ -188,7 +188,7 @@ public class ServerFurther {
                         Request request = new Request(name, pieceIndex);
                         PayloadMessage pieceRequest = new PayloadMessage(MessageConversion.messageToBytes(request));
                         ActualMessage requestMessage = new ActualMessage(1, 6, pieceRequest);
-                        sendMessage(MessageConversion.messageToBytes(requestMessage));
+                        CommonMethods.sendMessage(MessageConversion.messageToBytes(requestMessage), out);
                         break outerloop;
                     }
                 }
@@ -210,7 +210,7 @@ public class ServerFurther {
                             if (handshakeMessage.getHeader().equals("P2PFILESHARINGPROJ") && handshakes.get(otherPeerID) == null) {
                                 HandshakeMessage handshakeMessageBack = new HandshakeMessage(peerID);
                                 handshakes.put(otherPeerID, true);
-                                sendMessage(MessageConversion.messageToBytes(handshakeMessageBack));
+                                CommonMethods.sendMessage(MessageConversion.messageToBytes(handshakeMessageBack), out);
                             }
                             else if (handshakeMessage.getHeader().equals("P2PFILESHARINGPROJ") && handshakes.get(otherPeerID) == true) {
                                 System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] is connected from Peer [" + otherPeerID + "]");
@@ -220,7 +220,7 @@ public class ServerFurther {
                                     String name = (String)mapElement.getKey();
                                     BitField bitField = ((BitField)mapElement.getValue());
                                     ActualMessage bitFieldMessage = new ActualMessage(1, 5, new PayloadMessage(MessageConversion.messageToBytes(bitField)));
-                                    sendMessage(MessageConversion.messageToBytes(bitFieldMessage));
+                                    CommonMethods.sendMessage(MessageConversion.messageToBytes(bitFieldMessage), out);
                                 }
                             }
                         }
@@ -269,12 +269,12 @@ public class ServerFurther {
                                     if(bitFields.containsKey(name)) {
                                         if (bitFields.get(name).getBitField()[pieceNum] == 0) {
                                             ActualMessage interestMessage = new ActualMessage(1, 2, null);
-                                            sendMessage(MessageConversion.messageToBytes(interestMessage));
+                                            CommonMethods.sendMessage(MessageConversion.messageToBytes(interestMessage), out);
                                         }
                                     }
                                     else {
                                         ActualMessage interestMessage = new ActualMessage(1, 2, null);
-                                        sendMessage(MessageConversion.messageToBytes(interestMessage));
+                                        CommonMethods.sendMessage(MessageConversion.messageToBytes(interestMessage), out);
                                     }
                                 }
                             }
@@ -299,14 +299,14 @@ public class ServerFurther {
                                             for (int i = 0; i < length; i++) {
                                                 if (bitFieldServer.bitField[i] == 0 && bitFieldClient.bitField[i] == 1 && requestBitFields.get(name)[i] == 0) {
                                                     ActualMessage interestMessage = new ActualMessage(1, 2, null);
-                                                    sendMessage(MessageConversion.messageToBytes(interestMessage));
+                                                    CommonMethods.sendMessage(MessageConversion.messageToBytes(interestMessage), out);
                                                     flag = false;
                                                     break outerloop;
                                                 }
                                             }
                                         } else {
                                             ActualMessage interestMessage = new ActualMessage(1, 2, null);
-                                            sendMessage(MessageConversion.messageToBytes(interestMessage));
+                                            CommonMethods.sendMessage(MessageConversion.messageToBytes(interestMessage), out);
                                             flag = false;
                                             prepareToReceiveFile(bitFieldClient);
                                             break outerloop;
@@ -314,7 +314,7 @@ public class ServerFurther {
                                     }
                                     if (flag) {
                                         ActualMessage notInterestMessage = new ActualMessage(1, 3, null);
-                                        sendMessage(MessageConversion.messageToBytes(notInterestMessage));
+                                        CommonMethods.sendMessage(MessageConversion.messageToBytes(notInterestMessage), out);
                                         requestFlag = false;
                                     }
                                 }
@@ -338,7 +338,7 @@ public class ServerFurther {
                                         byte[] piece = Arrays.copyOfRange(files.get(name), pieceNum * bitFields.get(name).PieceSize, pieceNum * bitFields.get(name).PieceSize + bitFields.get(name).PieceSize);
                                         Piece pieceMsg = new Piece(name, msg.getPieceIndex(), piece);
                                         ActualMessage interestMessage = new ActualMessage(1, 7, new PayloadMessage(MessageConversion.messageToBytes(pieceMsg)));
-                                        sendMessage(MessageConversion.messageToBytes(interestMessage));
+                                        CommonMethods.sendMessage(MessageConversion.messageToBytes(interestMessage), out);
 
                                         if (!clientBitFields.containsKey(name)) {
                                             BitField temp = bitFields.get(name);
@@ -432,21 +432,6 @@ public class ServerFurther {
                 catch(IOException ioException){
                     System.out.println("Disconnect with Client " + no);
                 }
-            }
-        }
-
-        //send a message to the output stream
-        public void sendMessage(byte[] msg)
-        {
-            try{
-                synchronized (out) {
-                    out.writeObject(msg);
-                    out.flush();
-                }
-                //System.out.println("Send message: " + msg + " to Client " + no);
-            }
-            catch(IOException ioException){
-                System.out.println("Server Error 3 " + ioException.toString());
             }
         }
 
