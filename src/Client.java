@@ -62,9 +62,7 @@ public class Client {
                                     HandshakeMessage handshakeMessageBack = new HandshakeMessage(peerID);
                                     try {
                                         CommonMethods.sendMessage(MessageConversion.messageToBytes(handshakeMessageBack), out);
-                                        System.out.println("BEFORE " + peerID + " " + connectedPeersRates);
                                         connectedPeersRates.put(otherPeerID, 0);
-                                        System.out.println("AFTER " + peerID + " " + connectedPeersRates);
                                     } catch (IOException e) {
                                         System.out.println("Client Error 4 " + e.toString());
                                     }

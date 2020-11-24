@@ -64,9 +64,7 @@ public class ServerFurther {
                             CommonMethods.sendMessage(MessageConversion.messageToBytes(handshakeMessageBack), out);
                         } else if (handshakeMessage.getHeader().equals("P2PFILESHARINGPROJ") && handshakes.get(otherPeerID) == true) {
                             System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] is connected from Peer [" + otherPeerID + "]");
-                            System.out.println("BEFORE " + peerID + " " + connectedPeersRates);
                             connectedPeersRates.put(otherPeerID, 0);
-                            System.out.println("AFTER " + peerID + " " + connectedPeersRates);
                             for (Map.Entry mapElement : bitFields.entrySet()) {
                                 String name = (String) mapElement.getKey();
                                 BitField bitField = ((BitField) mapElement.getValue());
