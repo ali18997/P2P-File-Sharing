@@ -32,6 +32,10 @@ public class Peer {
         readPeerInfo1();
         readPeerInfo2();
 
+        PrintWriter writer = new PrintWriter("logs/log_peer_" + peerID + ".log");
+        writer.print("");
+        writer.close();
+
         server = new Server(this.peerID, peerPort, requestBitFields, bitFields, files, PieceSize, flag, flag2, connectedPeersRates, interestedPeers);
         Timer timer = new Timer();
         timer.schedule(new preferredNeighbours(), 0, p*1000);
@@ -152,14 +156,14 @@ public class Peer {
                 Integer peerID = (Integer) mapElement.getKey();
                 interestedPeers.replace(peerID, false);
             }
-
-            System.out.print("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] has the preferred neighbors [");
+            String log = "[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] has the preferred neighbors [";
             for (Map.Entry mapElement : topInterested.entrySet()) {
                 Integer peerID = (Integer) mapElement.getKey();
                 interestedPeers.replace(peerID, true);
-                System.out.print(peerID + ",");
+                log = log + ",";
             }
-            System.out.println("]");
+            log = log + "]";
+            Logging.writeLog(peerID, log);
 
             if(topInterested.isEmpty()){
                 StopCounter += 1;
@@ -187,7 +191,7 @@ public class Peer {
             if(!chokedInterested.isEmpty()) {
                 int randomPeer = chokedInterested.get(rand.nextInt(chokedInterested.size()));
                 interestedPeers.replace(randomPeer, true);
-                System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] has  the  optimistically  unchoked  neighbor [" + randomPeer + "]");
+                Logging.writeLog(peerID, "[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] has  the  optimistically  unchoked  neighbor [" + randomPeer + "]");
             }
             flag2.setFlag(!flag2.getFlag());
         }

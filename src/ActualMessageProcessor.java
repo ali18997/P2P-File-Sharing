@@ -54,22 +54,22 @@ public class ActualMessageProcessor {
     public void process(ActualMessage actualMessage) throws IOException, ClassNotFoundException {
         if (actualMessage.getMessageType() == 0) {
             //CHOKE
-            System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] is choked by [" + otherPeerID + "]");
+            Logging.writeLog(peerID, "[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] is choked by [" + otherPeerID + "]");
             requestFromOtherPeer = false;
             CommonMethods.redundantRequests(bitFields, requestBitFields);
 
         } else if (actualMessage.getMessageType() == 1) {
             //UNCHOKE
             CommonMethods.redundantRequests(bitFields, requestBitFields);
-            System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] is unchoked by [" + otherPeerID + "]");
+            Logging.writeLog(peerID, "[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] is unchoked by [" + otherPeerID + "]");
             requestFromOtherPeer = true;
             CommonMethods.requestPiece(requestFromOtherPeer, bitFields, otherPeerBitFields, requestBitFields, files, out);
         } else if (actualMessage.getMessageType() == 2) {
-            System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] received the \"interested\" message from [" + otherPeerID + "]");
+            Logging.writeLog(peerID, "[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] received the \"interested\" message from [" + otherPeerID + "]");
             interestedPeers.put(otherPeerID, false);
 
         } else if (actualMessage.getMessageType() == 3) {
-            System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] received the \"not interested\" message from [" + otherPeerID + "]");
+            Logging.writeLog(peerID, "[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] received the \"not interested\" message from [" + otherPeerID + "]");
         } else if (actualMessage.getMessageType() == 4) {
             //HAVE
             Have msg = (Have) MessageConversion.bytesToMessage(actualMessage.getPayload().getMessage());
@@ -98,7 +98,7 @@ public class ActualMessageProcessor {
                 }
             }
 
-            System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] received the \"have\" message from [" + otherPeerID + "] for the piece [" + pieceNum + "]");
+            Logging.writeLog(peerID, "[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] received the \"have\" message from [" + otherPeerID + "] for the piece [" + pieceNum + "]");
             if (requestFromOtherPeer) {
                 CommonMethods.requestPiece(requestFromOtherPeer, bitFields, otherPeerBitFields, requestBitFields, files, out);
             } else {
@@ -217,7 +217,7 @@ public class ActualMessageProcessor {
                     count = count + 1;
                 }
             }
-            System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] has downloaded the piece [" + pieceNum + "] from [" + otherPeerID + "]. Now the number of pieces it has is [" + count  + "]");
+            Logging.writeLog(peerID, "[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] has downloaded the piece [" + pieceNum + "] from [" + otherPeerID + "]. Now the number of pieces it has is [" + count  + "]");
 
             flagHave.setFlag(!flagHave.getFlag());
 
@@ -231,7 +231,7 @@ public class ActualMessageProcessor {
                 }
             }
             if (tempFlag) {
-                System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] has downloaded the complete file.");
+                Logging.writeLog(peerID, "[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] has downloaded the complete file.");
 
 
                 Files.write(Path.of(System.getProperty("user.dir") + "/peerFolder/" + peerID + "/" + fname), files.get(fname));

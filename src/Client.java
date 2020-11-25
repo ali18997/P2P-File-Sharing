@@ -58,7 +58,7 @@ public class Client {
                             if (receivedMsg instanceof HandshakeMessage) {
                                 HandshakeMessage handshakeMessage = (HandshakeMessage) receivedMsg;
                                 if (handshakeMessage.getHeader().equals("P2PFILESHARINGPROJ")) {
-                                    System.out.println("[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] makes a connection to Peer [" + otherPeerID + "]");
+                                    Logging.writeLog(peerID, "[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] makes a connection to Peer [" + otherPeerID + "]");
                                     HandshakeMessage handshakeMessageBack = new HandshakeMessage(peerID);
                                     try {
                                         CommonMethods.sendMessage(MessageConversion.messageToBytes(handshakeMessageBack), out);
