@@ -15,6 +15,7 @@ public class Peer {
     private HashMap<String, byte[]> files = new HashMap<String, byte[]>();
     private HashMap<Integer, Integer> connectedPeersRates = new HashMap<Integer, Integer>();
     private HashMap<Integer, Boolean> interestedPeers = new HashMap<Integer, Boolean>();
+    private int StopCounter = 0;
 
 
     private int PieceSize;
@@ -159,6 +160,14 @@ public class Peer {
                 System.out.print(peerID + ",");
             }
             System.out.println("]");
+
+            if(topInterested.isEmpty()){
+                StopCounter += 1;
+            }
+
+            if(StopCounter >= 3){
+                System.exit(0);
+            }
 
             flag2.setFlag(!flag2.getFlag());
 
