@@ -165,7 +165,7 @@ public class Peer {
                 StopCounter += 1;
             }
 
-            if(StopCounter >= 3){
+            if(StopCounter >= 5){
                 System.exit(0);
             }
 
