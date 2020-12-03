@@ -10,12 +10,6 @@ public class main {
         Peer g = new Peer(1007);
         Peer h = new Peer(1008);
         Peer i = new Peer(1009);
-        Peer j = new Peer(1010);
-        Peer k = new Peer(1011);
-        Peer l = new Peer(1012);
-        Peer m = new Peer(1013);
-        Peer n = new Peer(1014);
-        Peer o = new Peer(1015);
 
     }
 }
