@@ -64,7 +64,7 @@ public class Client {
                                         CommonMethods.sendMessage(MessageConversion.messageToBytes(handshakeMessageBack), out);
                                         connectedPeersRates.put(otherPeerID, 0);
                                     } catch (IOException e) {
-                                        System.out.println("Client Error 4 " + e.toString());
+                                        //System.out.println("Client Error 4 " + e.toString());
                                     }
                                     for (Map.Entry mapElement : bitFields.entrySet()) {
                                         String name = (String)mapElement.getKey();
@@ -73,12 +73,12 @@ public class Client {
                                         try {
                                             bitFieldMessage = new ActualMessage(1, 5, new PayloadMessage(MessageConversion.messageToBytes(bitField)));
                                         } catch (IOException e) {
-                                            System.out.println("Client Error 41 " + e.toString());
+                                            //System.out.println("Client Error 41 " + e.toString());
                                         }
                                         try {
                                             CommonMethods.sendMessage(MessageConversion.messageToBytes(bitFieldMessage), out);
                                         } catch (IOException e) {
-                                            System.out.println("Client Error 5 " + e.toString());
+                                            //System.out.println("Client Error 5 " + e.toString());
                                         }
                                     }
 
@@ -89,9 +89,9 @@ public class Client {
                                 actualMessageProcessor.process(actualMessage);
                             }
                         } catch (IOException e) {
-                            System.out.println("Client Error 2 " + e.toString() + " " + receivedMsg + "Client " + peerID) ;
+                            //System.out.println("Client Error 2 " + e.toString() + " " + receivedMsg + "Client " + peerID) ;
                         } catch (ClassNotFoundException e) {
-                            System.out.println("Client Error 3 " + e.toString());
+                            //System.out.println("Client Error 3 " + e.toString());
                         }
 
                     }

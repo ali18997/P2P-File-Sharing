@@ -183,6 +183,7 @@ public class Peer {
             }
 
             if(StopCounter >= 2){
+                System.out.println("Done");
                 System.exit(0);
             }
 

@@ -20,7 +20,7 @@ public class CommonMethods {
             sendMessage(MessageConversion.messageToBytes(haveMessage), out);
             haveBitFields.get(currentPeerBitfield.FileName)[i] = 1;
         } catch (IOException e) {
-            System.out.println("Send Have Error:  " + e.toString());
+            //System.out.println("Send Have Error:  " + e.toString());
         }
 
     }
@@ -33,7 +33,7 @@ public class CommonMethods {
             }
         }
         catch(IOException ioException){
-            System.out.println("Send Message Error: " + ioException.toString());
+            //System.out.println("Send Message Error: " + ioException.toString());
         }
     }
 

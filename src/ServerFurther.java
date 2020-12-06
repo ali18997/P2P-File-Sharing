@@ -78,9 +78,9 @@ public class ServerFurther {
                     }
                 }
             } catch (ClassNotFoundException classnot) {
-                System.out.println("Server Error 2 " + classnot.toString());
+                //System.out.println("Server Error 2 " + classnot.toString());
             } catch (IOException ioException) {
-                System.out.println("Disconnect with Client " + no);
+                //System.out.println("Disconnect with Client " + no);
             } finally {
                 //Close connections
                 try {
@@ -88,7 +88,7 @@ public class ServerFurther {
                     out.close();
                     connection.close();
                 } catch (IOException ioException) {
-                    System.out.println("Disconnect with Client " + no);
+                    //System.out.println("Disconnect with Client " + no);
                 }
             }
 
