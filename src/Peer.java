@@ -37,7 +37,7 @@ public class Peer {
         readPeerInfo1();
         readPeerInfo2();
 
-        PrintWriter writer = new PrintWriter("logs/log_peer_" + peerID + ".log");
+        PrintWriter writer = new PrintWriter("log_peer_" + peerID + ".log");
         writer.print("");
         writer.close();
 

@@ -234,7 +234,7 @@ public class ActualMessageProcessor {
                 Logging.writeLog(peerID, "[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] has downloaded the complete file.");
 
 
-                Files.write(Path.of(System.getProperty("user.dir") + "/peerFolder/" + peerID + "/" + fname), files.get(fname));
+                Files.write(Path.of(System.getProperty("user.dir") + "/" + peerID + "/" + fname), files.get(fname));
 
             }
             CommonMethods.requestPiece(requestFromOtherPeer, bitFields, otherPeerBitFields, requestBitFields, files, out);

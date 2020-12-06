@@ -51,7 +51,7 @@ public class CommonMethods {
     }
 
     public static void readActualFile(String name, HashMap<String, byte[]> files, int peerID) throws IOException {
-        final File folder = new File(System.getProperty("user.dir") + "/peerFolder/" + peerID);
+        final File folder = new File(System.getProperty("user.dir") + "/" + peerID);
         for (final File fileEntry : folder.listFiles()) {
             if (name.equals(fileEntry.getName())) {
                 byte[] bytes = Files.readAllBytes(fileEntry.toPath());
@@ -109,7 +109,7 @@ public class CommonMethods {
     }
 
     public static void prepareBitFields(int peerID, int PieceSize, HashMap<String, BitField> bitFields) throws IOException {
-        final File folder = new File(System.getProperty("user.dir") + "/peerFolder/" + peerID);
+        final File folder = new File(System.getProperty("user.dir") + "/" + peerID);
         if (!folder.exists()){folder.mkdir();}
         for (final File fileEntry : folder.listFiles()) {
             String fileName = fileEntry.getName();
