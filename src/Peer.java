@@ -16,7 +16,8 @@ public class Peer {
     private HashMap<Integer, Integer> connectedPeersRates = new HashMap<Integer, Integer>();
     private HashMap<Integer, Boolean> interestedPeers = new HashMap<Integer, Boolean>();
     private int StopCounter = 0;
-
+    private HashMap<Integer, Integer> stopping = new HashMap<Integer, Integer>();
+    private Boolean flagStopping = false;
 
     private int PieceSize;
     private int k;
@@ -28,6 +29,10 @@ public class Peer {
 
     public Peer(int peerID) throws IOException {
         this.peerID = peerID;
+
+        stopping.put(0,0);
+        stopping.put(1,0);
+
         readCommon();
         readPeerInfo1();
         readPeerInfo2();
@@ -36,7 +41,7 @@ public class Peer {
         writer.print("");
         writer.close();
 
-        server = new Server(this.peerID, peerPort, requestBitFields, bitFields, files, PieceSize, flag, flag2, connectedPeersRates, interestedPeers);
+        server = new Server(this.peerID, peerPort, requestBitFields, bitFields, files, PieceSize, flag, flag2, connectedPeersRates, interestedPeers, stopping);
         Timer timer = new Timer();
         timer.schedule(new preferredNeighbours(), 0, p*1000);
         timer.schedule(new optimisticallyUnchokedNeighbor(), 0, m*1000);
@@ -62,20 +67,25 @@ public class Peer {
 
     public void readPeerInfo2() throws IOException {
         BufferedReader reader;
+        Boolean flag = true;
         try {
             reader = new BufferedReader(new FileReader("PeerInfo.cfg"));
             String line = reader.readLine();
             while (line != null) {
                 String[] splitted = line.split(" ");
+                stopping.replace(0, stopping.get(0)+1);
                 if(Integer.parseInt(splitted[0]) == peerID){
-                    break;
+                    flag = false;
                 }
                 else {
-                    connectToPeer(Integer.parseInt(splitted[0]), splitted[1], Integer.parseInt(splitted[2]));
+                    if(flag) {
+                        connectToPeer(Integer.parseInt(splitted[0]), splitted[1], Integer.parseInt(splitted[2]));
+                    }
                 }
                 line = reader.readLine();
             }
             reader.close();
+            flagStopping = true;
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -112,6 +122,7 @@ public class Peer {
         Client temp = new Client(otherPeerID, otherPeerHostName, otherPeerPort, this.peerID, requestBitFields, bitFields, files, PieceSize, flag, flag2, connectedPeersRates, interestedPeers);
         clients.put(otherPeerID, temp);
         handShakePeer(otherPeerID);
+        stopping.replace(1, stopping.get(1)+1);
     }
 
     public void handShakePeer(int otherPeerID) throws IOException {
@@ -166,12 +177,16 @@ public class Peer {
             Logging.writeLog(peerID, log);
 
             if(topInterested.isEmpty()){
-                StopCounter += 1;
+                if(stopping.get(1) == stopping.get(0)-1 && flagStopping){
+                    StopCounter += 1;
+                }
             }
 
-            if(StopCounter >= 5){
+            if(StopCounter >= 2){
                 System.exit(0);
             }
+
+
 
             flag2.setFlag(!flag2.getFlag());
 

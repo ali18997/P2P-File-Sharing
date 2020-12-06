@@ -16,8 +16,10 @@ public class Server {
     private HashMap<Integer, Integer> connectedPeersRates;
     private HashMap<Integer, Boolean> interestedPeers;
 
+    private HashMap<Integer, Integer> stopping;
 
-    public Server(int peerID, int port, HashMap<String, byte[]> requestBitFields, HashMap<String, BitField> bitFields, HashMap<String, byte[]> files, int PieceSize, FlagObservable flag, FlagObservable flag2, HashMap<Integer, Integer> connectedPeersRates, HashMap<Integer, Boolean> interestedPeers) {
+
+    public Server(int peerID, int port, HashMap<String, byte[]> requestBitFields, HashMap<String, BitField> bitFields, HashMap<String, byte[]> files, int PieceSize, FlagObservable flag, FlagObservable flag2, HashMap<Integer, Integer> connectedPeersRates, HashMap<Integer, Boolean> interestedPeers, HashMap<Integer, Integer> stopping) {
 
         this.peerID = peerID;
         this.requestBitFields = requestBitFields;
@@ -28,6 +30,7 @@ public class Server {
         this.flag2 = flag2;
         this.connectedPeersRates = connectedPeersRates;
         this.interestedPeers = interestedPeers;
+        this.stopping = stopping;
 
         new Handler(port).start();
     }
@@ -51,6 +54,7 @@ public class Server {
                 while(true) {
                     try {
                         new ServerFurther.Handler(listener.accept(),clientNum, peerID, requestBitFields, bitFields, files, PieceSize, flag, flag2, connectedPeersRates, interestedPeers).start();
+                        stopping.replace(1, stopping.get(1)+1);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
