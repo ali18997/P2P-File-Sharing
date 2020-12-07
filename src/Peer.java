@@ -186,7 +186,7 @@ public class Peer {
             for (Map.Entry mapElement : topInterested.entrySet()) {
                 Integer peerID = (Integer) mapElement.getKey();
                 interestedPeers.replace(peerID, true);
-                log = log + ",";
+                log = log + peerID + ",";
             }
             log = log + "]";
             Logging.writeLog(peerID, log);
@@ -202,8 +202,6 @@ public class Peer {
                 Logging.writeLog(peerID, "[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] is closing as file is sent to all peers.");
                 System.exit(0);
             }
-
-
 
             flag2.setFlag(!flag2.getFlag());
 

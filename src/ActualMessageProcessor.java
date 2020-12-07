@@ -115,6 +115,7 @@ public class ActualMessageProcessor {
         } else if (actualMessage.getMessageType() == 5) {
             BitField bitField = (BitField) MessageConversion.bytesToMessage(actualMessage.getPayload().getMessage());
             otherPeerBitFields.put(bitField.getFileName(), bitField);
+            Logging.writeLog(peerID, "[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] received Bitfield message by [" + otherPeerID + "]");
 
             if (requestFlag == false) {
                 requestFlag = true;
