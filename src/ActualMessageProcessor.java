@@ -162,6 +162,8 @@ public class ActualMessageProcessor {
 
             int pieceNum = ByteBuffer.wrap(msg.getPieceIndex()).getInt();
 
+            Logging.writeLog(peerID, "[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] has received \"request\" message for the piece [" + pieceNum + "] from [" + otherPeerID + "].");
+
             if (sendToOtherPeer) {
                 if (bitFields.get(name).bitField[pieceNum] == 1) {
                     byte[] piece = Arrays.copyOfRange(files.get(name), pieceNum * bitFields.get(name).PieceSize, pieceNum * bitFields.get(name).PieceSize + bitFields.get(name).PieceSize);

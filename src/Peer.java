@@ -33,13 +33,13 @@ public class Peer {
         stopping.put(0,0);
         stopping.put(1,0);
 
-        readCommon();
-        readPeerInfo1();
-        readPeerInfo2();
-
         PrintWriter writer = new PrintWriter("log_peer_" + peerID + ".log");
         writer.print("");
         writer.close();
+
+        readCommon();
+        readPeerInfo1();
+        readPeerInfo2();
 
         server = new Server(this.peerID, peerPort, requestBitFields, bitFields, files, PieceSize, flag, flag2, connectedPeersRates, interestedPeers, stopping);
         Timer timer = new Timer();
@@ -83,7 +83,11 @@ public class Peer {
                     }
                 }
                 line = reader.readLine();
+                if(Integer.parseInt(splitted[3]) == 1) {
+                    Logging.writeLog(peerID, "[" + java.time.LocalDateTime.now() + "]: Peer [" + Integer.parseInt(splitted[0]) + "] has the complete file.");
+                }
             }
+
             reader.close();
             flagStopping = true;
         } catch (IOException e) {
@@ -100,16 +104,27 @@ public class Peer {
                 String[] splitted = line.split(" ");
                 if (splitted[0].equals("NumberOfPreferredNeighbors")) {
                     k = Integer.parseInt(splitted[1]);
+                    Logging.writeLog(peerID, "[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] has Number Of Preferred Neighbors set to " + k);
                 }
                 else if (splitted[0].equals("UnchokingInterval"))  {
                     p = Integer.parseInt(splitted[1]);
+                    Logging.writeLog(peerID, "[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] has Unchoking Interval set to " + p);
                 }
                 else if (splitted[0].equals("OptimisticUnchokingInterval"))  {
                     m = Integer.parseInt(splitted[1]);
+                    Logging.writeLog(peerID, "[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] has Optimistic Unchoking Interval set to " + m);
                 }
                 else if (splitted[0].equals("PieceSize"))  {
                     PieceSize = Integer.parseInt(splitted[1]);
+                    Logging.writeLog(peerID, "[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] has Piece size set to " + PieceSize);
                 }
+                else if (splitted[0].equals("FileName"))  {
+                    Logging.writeLog(peerID, "[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] has File Name set to " + splitted[1]);
+                }
+                else if (splitted[0].equals("FileSize"))  {
+                    Logging.writeLog(peerID, "[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] has File Size set to " + Integer.parseInt(splitted[1]));
+                }
+
                 line = reader.readLine();
             }
             reader.close();
@@ -184,6 +199,7 @@ public class Peer {
 
             if(StopCounter >= 2){
                 System.out.println("Done");
+                Logging.writeLog(peerID, "[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] is closing as file is sent to all peers.");
                 System.exit(0);
             }
 
