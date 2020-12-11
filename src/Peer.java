@@ -18,6 +18,8 @@ public class Peer {
     private int StopCounter = 0;
     private HashMap<Integer, Integer> stopping = new HashMap<Integer, Integer>();
     private Boolean flagStopping = false;
+    private Boolean flagFile = false;
+    private String fileName;
 
     private int PieceSize;
     private int k;
@@ -119,6 +121,7 @@ public class Peer {
                     Logging.writeLog(peerID, "[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] has Piece size set to " + PieceSize);
                 }
                 else if (splitted[0].equals("FileName"))  {
+                    fileName = splitted[1];
                     Logging.writeLog(peerID, "[" + java.time.LocalDateTime.now() + "]: Peer [" + peerID + "] has File Name set to " + splitted[1]);
                 }
                 else if (splitted[0].equals("FileSize"))  {
@@ -192,7 +195,21 @@ public class Peer {
             Logging.writeLog(peerID, log);
 
             if(topInterested.isEmpty()){
-                if(stopping.get(1) == stopping.get(0)-1 && flagStopping){
+                if(stopping.get(1) == stopping.get(0)-1 && flagStopping && !flagFile){
+                    byte[] temp = bitFields.get(fileName).getBitField();
+                    Boolean tempFlag = true;
+                    for (int i = 0; i < bitFields.get(fileName).getBitField().length - 1; i++) {
+                        if (temp[i] == 0) {
+                            tempFlag = false;
+                            break;
+                        }
+                    }
+                    if(tempFlag){
+                        flagFile=true;
+                    }
+
+                }
+                if (flagFile){
                     StopCounter += 1;
                 }
             }
